@@ -54,7 +54,10 @@ class Predictor(BasePredictor):
         self.pipe = DiffusionPipeline.from_pretrained(SDXL_MODEL_CACHE, torch_dtype=torch.float16).to("cuda")
 
         self.pipe.load_lora_weights("./", weight_name="drip_glasses.safetensors", adapter_name="TOK")
-        self.pipe.load_lora_weights("./trained-model/", weight_name="lora.safetensors", adapter_name="LUK")
+
+        if os.path.exists("./trained-model/"):
+            self.trained_model = True
+            self.pipe.load_lora_weights("./trained-model/", weight_name="lora.safetensors", adapter_name="LUK")
 
         print("Loading SDXL refiner pipeline...")
         # FIXME(ja): should the vae/text_encoder_2 be loaded from SDXL always?
@@ -135,7 +138,8 @@ class Predictor(BasePredictor):
 
         print(f"Prompt: {prompt}")
 
-        self.pipe.set_adapters(["TOK", "LUK"], adapter_weights=[lora_scale, lora_scale2])
+        if self.trained_model:
+            self.pipe.set_adapters(["TOK", "LUK"], adapter_weights=[lora_scale, lora_scale2])
 
         sdxl_kwargs = {}
 
@@ -164,7 +168,7 @@ class Predictor(BasePredictor):
         if refine in ["expert_ensemble_refiner", "base_image_refiner"]:
             refiner_kwargs = {
                 "image": output.images,
-                "cross_attention_kwargs": {"scale": lora_scale}, 
+                "cross_attention_kwargs": {"scale": 1.0 if self.trained_model else lora_scale }, 
             }
 
             if refine == "expert_ensemble_refiner":
