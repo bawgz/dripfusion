@@ -55,6 +55,7 @@ class Predictor(BasePredictor):
 
         self.pipe.load_lora_weights("./", weight_name="drip_glasses.safetensors", adapter_name="TOK")
 
+        self.trained_model = False
         if os.path.exists("./trained-model/"):
             self.trained_model = True
             self.pipe.load_lora_weights("./trained-model/", weight_name="lora.safetensors", adapter_name="LUK")
