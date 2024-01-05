@@ -11,7 +11,7 @@ from trainer_pti import main
 """
 Wrapper around actual trainer.
 """
-OUTPUT_DIR = "training_out"
+OUTPUT_DIR = "trained-model"
 
 
 class TrainingOutput(BaseModel):
@@ -81,10 +81,10 @@ def train(
         description="Number of warmup steps for lr schedulers with warmups.",
         default=100,
     ),
-    token_string: str = Input(
-        description="A unique string that will be trained to refer to the concept in the input images. Can be anything, but TOK works well",
-        default="TOK",
-    ),
+    # token_string: str = Input(
+    #     description="A unique string that will be trained to refer to the concept in the input images. Can be anything, but TOK works well",
+    #     default="TOK",
+    # ),
     # token_map: str = Input(
     #     description="String of token and their impact size specificing tokens used in the dataset. This will be in format of `token1:size1,token2:size2,...`.",
     #     default="TOK:2",
@@ -121,14 +121,8 @@ def train(
     ),
 ) -> TrainingOutput:
     # Hard-code token_map for now. Make it configurable once we support multiple concepts or user-uploaded caption csv.
-    token_map = token_string + ":2"
 
     # Process 'token_to_train' and 'input_data_tar_or_zip'
-    inserting_list_tokens = token_map.split(",")
-
-    token_dict = {}
-    running_tok_cnt = 0
-    all_token_lists = []
 
     # try without this replacing of tokens
     
@@ -151,7 +145,6 @@ def train(
         crop_based_on_salience=crop_based_on_salience,
         use_face_detection_instead=use_face_detection_instead,
         temp=clipseg_temperature,
-        substitution_tokens=list(token_dict.keys()),
     )
 
     if not os.path.exists(SDXL_MODEL_CACHE):
@@ -175,8 +168,6 @@ def train(
         lora_lr=lora_lr,
         lr_scheduler=lr_scheduler,
         lr_warmup_steps=lr_warmup_steps,
-        token_dict=token_dict,
-        inserting_list_tokens=all_token_lists,
         verbose=verbose,
         checkpointing_steps=checkpointing_steps,
         scale_lr=False,

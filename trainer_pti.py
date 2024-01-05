@@ -16,7 +16,6 @@ from tqdm.auto import tqdm
 
 from dataset_and_utils import (
     PreprocessedDataset,
-    TokenEmbeddingsHandler,
     load_models,
     unet_attn_processors_state_dict,
 )
@@ -53,8 +52,6 @@ def main(
     allow_tf32: bool = True,
     mixed_precision: Optional[str] = "bf16",
     device: str = "cuda:0",
-    token_dict: dict = {"TOKEN": "<s0>"},
-    inserting_list_tokens: List[str] = ["<s0>"],
     verbose: bool = True,
     is_lora: bool = True,
     lora_rank: int = 32,
@@ -90,11 +87,6 @@ def main(
     print("# PTI : Loaded models")
 
     # Initialize new tokens for training.
-
-    embedding_handler = TokenEmbeddingsHandler(
-        [text_encoder_one, text_encoder_two], [tokenizer_one, tokenizer_two]
-    )
-    embedding_handler.initialize_new_tokens(inserting_toks=inserting_list_tokens)
 
     text_encoders = [text_encoder_one, text_encoder_two]
 
@@ -201,7 +193,6 @@ def main(
         tokenizer_two,
         vae.float(),
         do_cache=True,
-        substitute_caption_map=token_dict,
     )
 
     print("# PTI : Loaded dataset")
@@ -257,7 +248,6 @@ def main(
         shutil.rmtree(checkpoint_dir)
 
     os.makedirs(f"{checkpoint_dir}/unet", exist_ok=True)
-    os.makedirs(f"{checkpoint_dir}/embeddings", exist_ok=True)
 
     for epoch in range(first_epoch, num_train_epochs):
         if pivot_halfway:
@@ -340,11 +330,6 @@ def main(
             lr_scheduler.step()
             optimizer.zero_grad()
 
-            # every step, we reset the embeddings to the original embeddings.
-
-            for idx, text_encoder in enumerate(text_encoders):
-                embedding_handler.retract_embeddings()
-
             if global_step % checkpointing_steps == 0:
                 # save the required params of unet with safetensor
 
@@ -367,10 +352,6 @@ def main(
                         f"{checkpoint_dir}/unet/checkpoint-{global_step}.lora.safetensors",
                     )
 
-                embedding_handler.save_embeddings(
-                    f"{checkpoint_dir}/embeddings/checkpoint-{global_step}.pti",
-                )
-
     # final_save
     print("Saving final model for return")
     if not is_lora:
@@ -389,14 +370,6 @@ def main(
             lora_tensors,
             f"{output_dir}/lora.safetensors",
         )
-
-    embedding_handler.save_embeddings(
-        f"{output_dir}/embeddings.pti",
-    )
-
-    to_save = token_dict
-    with open(f"{output_dir}/special_params.json", "w") as f:
-        json.dump(to_save, f)
 
 
 if __name__ == "__main__":

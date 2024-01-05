@@ -16,9 +16,6 @@ temp/
 temp_in/
 cog_instance_data/
 example_datasets/
-zeke_data.tar
-data.tar
-zeke.zip
 sketch-mountains-input.jpeg
 training_out*
 weights
@@ -30,3 +27,4 @@ clipseg-cache/
 swin2sr-cache/
 weights-cache/
 tests/
+trained_model.tar
