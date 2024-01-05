@@ -147,6 +147,7 @@ class Predictor(BasePredictor):
         print(f"Using seed: {seed}")
 
         if self.trained_model:
+            print("using two loras")
             self.pipe.set_adapters(["TOK", "LUK"], adapter_weights=[lora_scale_base, lora_scale_custom])
 
         sdxl_kwargs = {}
@@ -163,7 +164,7 @@ class Predictor(BasePredictor):
             "prompt": prompt,
             "negative_prompt": negative_prompt,
             "guidance_scale": guidance_scale,
-            "generator": torch.Generator.manual_seed(seed),
+            "generator": torch.manual_seed(seed),
             "num_inference_steps": num_inference_steps,
         }
 
