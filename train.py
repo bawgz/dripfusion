@@ -90,7 +90,7 @@ def train(
     #     default="TOK:2",
     # ),
     caption_prefix: str = Input(
-        description="Text which will be used as prefix during automatic captioning. Must contain the `token_string`. For example, if caption text is 'a photo of TOK', automatic captioning will expand to 'a photo of TOK under a bridge', 'a photo of TOK holding a cup', etc.",
+        description="Text which will be used as prefix during automatic captioning. For example, if caption text is 'a photo of TOK', automatic captioning will expand to 'a photo of TOK under a bridge', 'a photo of TOK holding a cup', etc.",
         default="a photo of TOK, ",
     ),
     mask_target_prompts: str = Input(
