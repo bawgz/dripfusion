@@ -107,13 +107,16 @@ class Predictor(BasePredictor):
         guidance_scale: float = Input(
             description="Scale for classifier-free guidance", ge=1, le=50, default=7.5
         ),
-        lora_scale: float = Input(
-            description="LoRA additive scale. Only applicable on trained models.",
+        seed: int = Input(
+            description="Random seed. Leave blank to randomize the seed", default=None
+        ),
+        lora_scale_base: float = Input(
+            description="LoRA additive scale for base dripfusion lora",
             ge=0.0,
             le=1.0,
             default=0.6,
         ),
-        lora_scale2: float = Input(
+        lora_scale_custom: float = Input(
             description="LoRA additive scale. Only applicable on trained models.",
             ge=0.0,
             le=1.0,
@@ -139,8 +142,12 @@ class Predictor(BasePredictor):
 
         print(f"Prompt: {prompt}")
 
+        if seed is None:
+            seed = int.from_bytes(os.urandom(2), "big")
+        print(f"Using seed: {seed}")
+
         if self.trained_model:
-            self.pipe.set_adapters(["TOK", "LUK"], adapter_weights=[lora_scale, lora_scale2])
+            self.pipe.set_adapters(["TOK", "LUK"], adapter_weights=[lora_scale_base, lora_scale_custom])
 
         sdxl_kwargs = {}
 
@@ -150,19 +157,22 @@ class Predictor(BasePredictor):
         elif refine == "base_image_refiner":
             sdxl_kwargs["output_type"] = "latent"
 
-        sdxl_kwargs["cross_attention_kwargs"] = {"scale": 1.0}
+        sdxl_kwargs["cross_attention_kwargs"] = {"scale": 1.0 if self.trained_model else lora_scale_base}
 
         common_args = {
             "prompt": prompt,
             "negative_prompt": negative_prompt,
             "guidance_scale": guidance_scale,
-            "generator": torch.manual_seed(0),
+            "generator": torch.Generator.manual_seed(seed),
             "num_inference_steps": num_inference_steps,
         }
 
         pipe = self.pipe
 
         pipe.scheduler = SCHEDULERS[scheduler].from_config(pipe.scheduler.config)
+
+        print("Common args: ", common_args)
+        print("SDXL args: ", sdxl_kwargs)
 
         output = pipe(**common_args, **sdxl_kwargs)
 
