@@ -90,7 +90,7 @@ def train(
     #     default="TOK:2",
     # ),
     caption_prefix: str = Input(
-        description="Text which will be used as prefix during automatic captioning. For example, if caption text is 'a photo of TOK', automatic captioning will expand to 'a photo of TOK under a bridge', 'a photo of TOK holding a cup', etc.",
+        description="Text which will be used as prefix during automatic captioning. Must contain the `token_string`. For example, if caption text is 'a photo of TOK', automatic captioning will expand to 'a photo of TOK under a bridge', 'a photo of TOK holding a cup', etc.",
         default="a photo of TOK, ",
     ),
     mask_target_prompts: str = Input(
@@ -129,18 +129,15 @@ def train(
     token_dict = {}
     running_tok_cnt = 0
     all_token_lists = []
+    for token in inserting_list_tokens:
+        n_tok = int(token.split(":")[1])
 
-    # try without this replacing of tokens
-    
-    # for token in inserting_list_tokens:
-    #     n_tok = int(token.split(":")[1])
+        token_dict[token.split(":")[0]] = "".join(
+            [f"<s{i + running_tok_cnt}>" for i in range(n_tok)]
+        )
+        all_token_lists.extend([f"<s{i + running_tok_cnt}>" for i in range(n_tok)])
 
-    #     token_dict[token.split(":")[0]] = "".join(
-    #         [f"<s{i + running_tok_cnt}>" for i in range(n_tok)]
-    #     )
-    #     all_token_lists.extend([f"<s{i + running_tok_cnt}>" for i in range(n_tok)])
-
-    #     running_tok_cnt += n_tok
+        running_tok_cnt += n_tok
 
     input_dir = preprocess(
         input_images_filetype=input_images_filetype,
