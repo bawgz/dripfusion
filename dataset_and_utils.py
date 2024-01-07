@@ -49,6 +49,7 @@ class PreprocessedDataset(Dataset):
         size: int = 512,
         text_dropout: float = 0.0,
         scale_vae_latents: bool = True,
+        substitute_caption_map: Dict[str, str] = {},
     ):
         super().__init__()
 
@@ -58,6 +59,8 @@ class PreprocessedDataset(Dataset):
         self.caption = self.data["caption"]
         # make it lowercase
         self.caption = self.caption.str.lower()
+        for key, value in substitute_caption_map.items():
+            self.caption = self.caption.str.replace(key.lower(), value)
 
         self.image_path = self.data["image_path"]
 

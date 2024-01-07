@@ -62,6 +62,7 @@ def preprocess(
     crop_based_on_salience: bool,
     use_face_detection_instead: bool,
     temp: float,
+    substitution_tokens: List[str],
 ) -> Path:
     # assert str(files).endswith(".zip"), "files must be a zip file"
 
@@ -121,6 +122,7 @@ def preprocess(
         crop_based_on_salience=crop_based_on_salience,
         use_face_detection_instead=use_face_detection_instead,
         temp=temp,
+        substitution_tokens=substitution_tokens,
     )
 
     return Path(TEMP_OUT_DIR)
@@ -235,6 +237,7 @@ def blip_captioning_dataset(
     images: List[Image.Image],
     text: Optional[str] = None,
     device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+    substitution_tokens: Optional[List[str]] = None,
     **kwargs,
 ) -> List[str]:
     """
@@ -255,6 +258,14 @@ def blip_captioning_dataset(
             **inputs, max_length=150, do_sample=True, top_k=50, temperature=0.7
         )
         caption = processor.decode(out[0], skip_special_tokens=True)
+
+        # BLIP 2 lowercases all caps tokens. This should properly replace them w/o messing up subwords. I'm sure there's a better way to do this.
+        for token in substitution_tokens:
+            print(token)
+            sub_cap = " " + caption + " "
+            print(sub_cap)
+            sub_cap = sub_cap.replace(" " + token.lower() + " ", " " + token + " ")
+            caption = sub_cap.strip()
 
         captions.append(text + " " + caption)
     print("Generated captions", captions)
@@ -446,6 +457,7 @@ def load_and_save_masks_and_captions(
     use_face_detection_instead: bool = False,
     temp: float = 1.0,
     n_length: int = -1,
+    substitution_tokens: Optional[List[str]] = None,
 ):
     """
     Loads images from the given files, generates masks for them, and saves the masks and captions and upscale images
@@ -504,7 +516,9 @@ def load_and_save_masks_and_captions(
                 
     else:
         print(f"Generating {len(images)} captions...")
-        captions = blip_captioning_dataset(images, text=caption_text)
+        captions = blip_captioning_dataset(
+            images, text=caption_text, substitution_tokens=substitution_tokens
+        )
 
     if mask_target_prompts is None:
         mask_target_prompts = ""
