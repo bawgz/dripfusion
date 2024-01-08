@@ -182,7 +182,7 @@ def main(
     #     do_cache=True,
     #     substitute_caption_map=token_dict,
     # )
-
+    print(instance_data_dir)
     data_files = {}
     data_files["train"] = os.path.join(instance_data_dir, "**")
     dataset = load_dataset(
