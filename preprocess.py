@@ -556,11 +556,12 @@ def load_and_save_masks_and_captions(
             os.remove(os.path.join(output_dir, file))
 
     os.makedirs(output_dir, exist_ok=True)
+    os.makedirs(os.path.join(output_dir, "masks"), exist_ok=True)
 
     # iterate through the images, masks, and captions and add a row to the dataframe for each
     for idx, (image, mask, caption) in enumerate(zip(images, seg_masks, captions)):
         image_name = f"{idx}.src.png"
-        mask_file = f"{idx}.mask.png"
+        mask_file = f"masks/{idx}.mask.png"
 
         # save the image and mask files
         image.save(output_dir + image_name)
