@@ -56,8 +56,6 @@ def main(
     allow_tf32: bool = True,
     mixed_precision: Optional[str] = "bf16",
     device: str = "cuda:0",
-    token_dict: dict = {"TOKEN": "<s0>"},
-    inserting_list_tokens: List[str] = ["<s0>"],
     verbose: bool = True,
     is_lora: bool = True,
     lora_rank: int = 4,

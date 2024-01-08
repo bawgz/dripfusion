@@ -163,8 +163,6 @@ def train(
         lora_lr=lora_lr,
         lr_scheduler=lr_scheduler,
         lr_warmup_steps=lr_warmup_steps,
-        token_dict=token_dict,
-        inserting_list_tokens=all_token_lists,
         verbose=verbose,
         checkpointing_steps=checkpointing_steps,
         scale_lr=False,
