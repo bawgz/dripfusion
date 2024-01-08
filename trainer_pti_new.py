@@ -223,9 +223,9 @@ def main(
 
     # Preprocessing the datasets.
     # We need to tokenize input captions and transform the images.
-    def tokenize_captions(dataset):
+    def tokenize_captions(examples):
         captions = []
-        for caption in dataset["caption"]:
+        for caption in examples["caption"]:
             captions.append(caption)
 
         print("captions ", captions)
@@ -262,11 +262,11 @@ def main(
         ]
     )
 
-    def preprocess_train(dataset):
-        images = [image.convert("RGB") for image in dataset["image"]]
-        dataset["pixel_values"] = [train_transforms(image) for image in images]
-        dataset["input_ids"] = tokenize_captions(dataset)
-        return dataset
+    def preprocess_train(examples):
+        images = [image.convert("RGB") for image in examples["image"]]
+        examples["pixel_values"] = [train_transforms(image) for image in images]
+        examples["input_ids"] = tokenize_captions(examples)
+        return examples
 
     # Set the training transforms
     train_dataset = dataset["train"].with_transform(preprocess_train)
