@@ -556,23 +556,23 @@ def load_and_save_masks_and_captions(
             os.remove(os.path.join(output_dir, file))
 
     os.makedirs(output_dir, exist_ok=True)
-    os.makedirs(os.path.join(output_dir, "masks"), exist_ok=True)
+    # os.makedirs(os.path.join(output_dir, "masks"), exist_ok=True)
 
     # iterate through the images, masks, and captions and add a row to the dataframe for each
     for idx, (image, mask, caption) in enumerate(zip(images, seg_masks, captions)):
         image_name = f"{idx}.src.png"
-        mask_file = f"masks/{idx}.mask.png"
+        # mask_file = f"masks/{idx}.mask.png"
 
         # save the image and mask files
         image.save(output_dir + image_name)
-        mask.save(output_dir + mask_file)
+        # mask.save(output_dir + mask_file)
 
         # add a new row to the dataframe with the file names and caption
         data.append(
-            {"file_name": image_name, "mask_path": mask_file, "caption": caption},
+            {"file_name": image_name, "caption": caption},
         )
 
-    df = pd.DataFrame(columns=["file_name", "mask_path", "caption"], data=data)
+    df = pd.DataFrame(columns=["file_name", "caption"], data=data)
     # save the dataframe to a CSV file
     df.to_json(os.path.join(output_dir, "metadata.jsonl"), orient="records", lines=True)
     df.to_csv(os.path.join(output_dir, "captions.csv"), index=False)
