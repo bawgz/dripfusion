@@ -53,14 +53,6 @@ def train(
         description="Whether to use LoRA training. If set to False, will use Full fine tuning",
         default=True,
     ),
-    unet_learning_rate: float = Input(
-        description="Learning rate for the U-Net. We recommend this value to be somewhere between `1e-6` to `1e-5`.",
-        default=1e-6,
-    ),
-    ti_lr: float = Input(
-        description="Scaling of learning rate for training textual inversion embeddings. Don't alter unless you know what you're doing.",
-        default=3e-4,
-    ),
     lora_lr: float = Input(
         description="Scaling of learning rate for training LoRA embeddings. Don't alter unless you know what you're doing.",
         default=1e-4,
@@ -169,8 +161,6 @@ def train(
         num_train_epochs=num_train_epochs,
         max_train_steps=max_train_steps,
         gradient_accumulation_steps=1,
-        unet_learning_rate=unet_learning_rate,
-        ti_lr=ti_lr,
         lora_lr=lora_lr,
         lr_scheduler=lr_scheduler,
         lr_warmup_steps=lr_warmup_steps,
