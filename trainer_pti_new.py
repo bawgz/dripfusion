@@ -44,8 +44,6 @@ def main(
     max_train_steps: Optional[int] = None,
     checkpointing_steps: int = 500000,  # default to no checkpoints
     gradient_accumulation_steps: int = 1,  # todo
-    unet_learning_rate: float = 1e-5,
-    ti_lr: float = 3e-4,
     lora_lr: float = 1e-4,
     pivot_halfway: bool = True,
     scale_lr: bool = False,
@@ -151,8 +149,8 @@ def main(
         torch.backends.cuda.matmul.allow_tf32 = True
 
     if scale_lr:
-        learning_rate = (
-            learning_rate * gradient_accumulation_steps * train_batch_size * num_processes
+        lora_lr = (
+            lora_lr * gradient_accumulation_steps * train_batch_size * num_processes
         )
 
     # TODO: what this is?
@@ -171,7 +169,7 @@ def main(
 
     optimizer = torch.optim.AdamW(
         lora_layers,
-        lr=learning_rate,
+        lr=lora_lr,
         betas=(adam_beta1, adam_beta2),
         weight_decay=adam_weight_decay,
         eps=adam_epsilon,
