@@ -53,6 +53,26 @@ TEMP_IN_DIR = "./temp_in/"
 CSV_MATCH = "caption"
 
 
+def download_input_images(input_zip_path: Path) -> Path:
+    for path in [TEMP_OUT_DIR, TEMP_IN_DIR]:
+        if os.path.exists(path):
+            shutil.rmtree(path)
+        os.makedirs(path)
+
+    with ZipFile(str(input_zip_path), "r") as zip_ref:
+        for zip_info in zip_ref.infolist():
+            if zip_info.filename[-1] == "/" or zip_info.filename.startswith(
+                "__MACOSX"
+            ):
+                continue
+            mt = mimetypes.guess_type(zip_info.filename)
+            if mt and mt[0] and mt[0].startswith("image/"):
+                zip_info.filename = os.path.basename(zip_info.filename)
+                zip_ref.extract(zip_info, TEMP_IN_DIR)
+
+    return Path(TEMP_IN_DIR)
+
+
 def preprocess(
     input_images_filetype: str,
     input_zip_path: Path,

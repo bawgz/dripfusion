@@ -5,8 +5,8 @@ import tarfile
 from cog import BaseModel, Input, Path
 
 from predict import SDXL_MODEL_CACHE, SDXL_URL, download_weights
-from preprocess import preprocess
-from trainer_pti import main
+from preprocess import preprocess, download_input_images
+from trainer_pti_new import main
 
 """
 Wrapper around actual trainer.
@@ -139,17 +139,19 @@ def train(
 
         running_tok_cnt += n_tok
 
-    input_dir = preprocess(
-        input_images_filetype=input_images_filetype,
-        input_zip_path=input_images,
-        caption_text=caption_prefix,
-        mask_target_prompts=mask_target_prompts,
-        target_size=resolution,
-        crop_based_on_salience=crop_based_on_salience,
-        use_face_detection_instead=use_face_detection_instead,
-        temp=clipseg_temperature,
-        substitution_tokens=list(token_dict.keys()),
-    )
+    input_dir = download_input_images(input_images)
+
+    # input_dir = preprocess(
+    #     input_images_filetype=input_images_filetype,
+    #     input_zip_path=input_images,
+    #     caption_text=caption_prefix,
+    #     mask_target_prompts=mask_target_prompts,
+    #     target_size=resolution,
+    #     crop_based_on_salience=crop_based_on_salience,
+    #     use_face_detection_instead=use_face_detection_instead,
+    #     temp=clipseg_temperature,
+    #     substitution_tokens=list(token_dict.keys()),
+    # )
 
     if not os.path.exists(SDXL_MODEL_CACHE):
         download_weights(SDXL_URL, SDXL_MODEL_CACHE)
@@ -159,7 +161,7 @@ def train(
 
     main(
         pretrained_model_name_or_path=SDXL_MODEL_CACHE,
-        instance_data_dir=os.path.join(input_dir, "captions.csv"),
+        instance_data_dir=input_dir,
         output_dir=OUTPUT_DIR,
         seed=seed,
         resolution=resolution,
