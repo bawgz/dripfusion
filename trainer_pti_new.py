@@ -300,7 +300,7 @@ def main(
         num_training_steps=max_train_steps * num_processes,
     )
 
-    print("dataset", dataset)
+    print("train_dataset", dataset)
     print("lr_scheduler", lr_scheduler)
 
     # # Prepare everything with our `accelerator`.
