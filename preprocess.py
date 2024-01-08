@@ -571,7 +571,7 @@ def load_and_save_masks_and_captions(
             {"file_name": image_name, "mask_path": mask_file, "caption": caption},
         )
 
-    df = pd.DataFrame(columns=["image_path", "mask_path", "caption"], data=data)
+    df = pd.DataFrame(columns=["file_name", "mask_path", "caption"], data=data)
     # save the dataframe to a CSV file
     df.to_json(os.path.join(output_dir, "metadata.jsonl"), orient="records", lines=True)
     df.to_csv(os.path.join(output_dir, "captions.csv"), index=False)
