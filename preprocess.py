@@ -568,7 +568,7 @@ def load_and_save_masks_and_captions(
 
         # add a new row to the dataframe with the file names and caption
         data.append(
-            {"image_path": image_name, "mask_path": mask_file, "caption": caption},
+            {"file_name": image_name, "mask_path": mask_file, "caption": caption},
         )
 
     df = pd.DataFrame(columns=["image_path", "mask_path", "caption"], data=data)
