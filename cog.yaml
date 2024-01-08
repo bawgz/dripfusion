@@ -13,7 +13,7 @@ build:
     - "wget"
   python_packages:
     - "diffusers"
-    - "torch==2.0.1"
+    - "torch"
     - "transformers"
     - "accelerate"
     - "pandas"
