@@ -12,6 +12,7 @@ import torch.utils.checkpoint
 from diffusers import AutoencoderKL, DDPMScheduler, UNet2DConditionModel
 from transformers import CLIPTextModel, CLIPTokenizer
 from datasets import load_dataset
+from torchvision import transforms
 
 from diffusers.models.attention_processor import LoRAAttnProcessor, LoRAAttnProcessor2_0
 from diffusers.optimization import get_scheduler
@@ -222,9 +223,9 @@ def main(
 
     # Preprocessing the datasets.
     # We need to tokenize input captions and transform the images.
-    def tokenize_captions(dataset, is_train=True):
+    def tokenize_captions(dataset):
         captions = []
-        for caption in dataset["captions"]:
+        for caption in dataset["caption"]:
             captions.append(caption)
 
         print("captions ", captions)
@@ -252,56 +253,55 @@ def main(
     #     return inputs.input_ids
 
     # Preprocessing the datasets.
-    # train_transforms = transforms.Compose(
-    #     [
-    #         transforms.Resize(resolution, interpolation=transforms.InterpolationMode.BILINEAR),
-    #         transforms.CenterCrop(resolution) if center_crop else transforms.RandomCrop(resolution),
-    #         transforms.RandomHorizontalFlip() if random_flip else transforms.Lambda(lambda x: x),
-    #         transforms.ToTensor(),
-    #         transforms.Normalize([0.5], [0.5]),
-    #     ]
-    # )
+    train_transforms = transforms.Compose(
+        [
+            transforms.Resize(resolution, interpolation=transforms.InterpolationMode.BILINEAR),
+            transforms.CenterCrop(resolution),
+            transforms.ToTensor(),
+            transforms.Normalize([0.5], [0.5]),
+        ]
+    )
 
-    # def preprocess_train(examples):
-    #     images = [image.convert("RGB") for image in examples[image_column]]
-    #     examples["pixel_values"] = [train_transforms(image) for image in images]
-    #     examples["input_ids"] = tokenize_captions(examples)
-    #     return examples
+    def preprocess_train(dataset):
+        images = [image.convert("RGB") for image in dataset["image"]]
+        dataset["pixel_values"] = [train_transforms(image) for image in images]
+        dataset["input_ids"] = tokenize_captions(dataset)
+        return dataset
 
-    # with accelerator.main_process_first():
-    #     if max_train_samples is not None:
-    #         dataset["train"] = dataset["train"].shuffle(seed=seed).select(range(max_train_samples))
-    #     # Set the training transforms
-    #     train_dataset = dataset["train"].with_transform(preprocess_train)
+    # Set the training transforms
+    train_dataset = dataset["train"].with_transform(preprocess_train)
 
-    # def collate_fn(examples):
-    #     pixel_values = torch.stack([example["pixel_values"] for example in examples])
-    #     pixel_values = pixel_values.to(memory_format=torch.contiguous_format).float()
-    #     input_ids = torch.stack([example["input_ids"] for example in examples])
-    #     return {"pixel_values": pixel_values, "input_ids": input_ids}
+    def collate_fn(examples):
+        pixel_values = torch.stack([example["pixel_values"] for example in examples])
+        pixel_values = pixel_values.to(memory_format=torch.contiguous_format).float()
+        input_ids = torch.stack([example["input_ids"] for example in examples])
+        return {"pixel_values": pixel_values, "input_ids": input_ids}
 
-    # # DataLoaders creation:
-    # train_dataloader = torch.utils.data.DataLoader(
-    #     train_dataset,
-    #     shuffle=True,
-    #     collate_fn=collate_fn,
-    #     batch_size=train_batch_size,
-    #     num_workers=dataloader_num_workers,
-    # )
+    # DataLoaders creation:
+    train_dataloader = torch.utils.data.DataLoader(
+        train_dataset,
+        shuffle=True,
+        collate_fn=collate_fn,
+        batch_size=train_batch_size,
+        num_workers=dataloader_num_workers,
+    )
 
-    # # Scheduler and math around the number of training steps.
-    # overrode_max_train_steps = False
-    # num_update_steps_per_epoch = math.ceil(len(train_dataloader) / gradient_accumulation_steps)
-    # if max_train_steps is None:
-    #     max_train_steps = num_train_epochs * num_update_steps_per_epoch
-    #     overrode_max_train_steps = True
+    # Scheduler and math around the number of training steps.
+    overrode_max_train_steps = False
+    num_update_steps_per_epoch = math.ceil(len(train_dataloader) / gradient_accumulation_steps)
+    if max_train_steps is None:
+        max_train_steps = num_train_epochs * num_update_steps_per_epoch
+        overrode_max_train_steps = True
 
-    # lr_scheduler = get_scheduler(
-    #     lr_scheduler,
-    #     optimizer=optimizer,
-    #     num_warmup_steps=lr_warmup_steps * accelerator.num_processes,
-    #     num_training_steps=max_train_steps * accelerator.num_processes,
-    # )
+    lr_scheduler = get_scheduler(
+        lr_scheduler,
+        optimizer=optimizer,
+        num_warmup_steps=lr_warmup_steps * num_processes,
+        num_training_steps=max_train_steps * num_processes,
+    )
+
+    print("dataset", dataset)
+    print("lr_scheduler", lr_scheduler)
 
     # # Prepare everything with our `accelerator`.
     # unet, optimizer, train_dataloader, lr_scheduler = accelerator.prepare(
