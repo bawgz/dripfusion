@@ -5,7 +5,7 @@ import tarfile
 from cog import BaseModel, Input, Path
 
 from predict import SDXL_MODEL_CACHE, SDXL_URL, download_weights
-from preprocess import preprocess, download_input_images
+from preprocess import preprocess
 from trainer_pti_new import main
 
 """
@@ -113,37 +113,36 @@ def train(
     ),
 ) -> TrainingOutput:
     # Hard-code token_map for now. Make it configurable once we support multiple concepts or user-uploaded caption csv.
-    token_map = token_string + ":2"
+    # token_map = token_string + ":2"
 
-    # Process 'token_to_train' and 'input_data_tar_or_zip'
-    inserting_list_tokens = token_map.split(",")
+    # # Process 'token_to_train' and 'input_data_tar_or_zip'
+    # inserting_list_tokens = token_map.split(",")
 
-    token_dict = {}
-    running_tok_cnt = 0
-    all_token_lists = []
-    for token in inserting_list_tokens:
-        n_tok = int(token.split(":")[1])
+    # token_dict = {}
+    # running_tok_cnt = 0
+    # all_token_lists = []
+    # for token in inserting_list_tokens:
+    #     n_tok = int(token.split(":")[1])
 
-        token_dict[token.split(":")[0]] = "".join(
-            [f"<s{i + running_tok_cnt}>" for i in range(n_tok)]
-        )
-        all_token_lists.extend([f"<s{i + running_tok_cnt}>" for i in range(n_tok)])
+    #     token_dict[token.split(":")[0]] = "".join(
+    #         [f"<s{i + running_tok_cnt}>" for i in range(n_tok)]
+    #     )
+    #     all_token_lists.extend([f"<s{i + running_tok_cnt}>" for i in range(n_tok)])
 
-        running_tok_cnt += n_tok
+    #     running_tok_cnt += n_tok
 
-    input_dir = download_input_images(input_images)
+    # input_dir = download_and_caption_input_images(input_images)
 
-    # input_dir = preprocess(
-    #     input_images_filetype=input_images_filetype,
-    #     input_zip_path=input_images,
-    #     caption_text=caption_prefix,
-    #     mask_target_prompts=mask_target_prompts,
-    #     target_size=resolution,
-    #     crop_based_on_salience=crop_based_on_salience,
-    #     use_face_detection_instead=use_face_detection_instead,
-    #     temp=clipseg_temperature,
-    #     substitution_tokens=list(token_dict.keys()),
-    # )
+    input_dir = preprocess(
+        input_images_filetype=input_images_filetype,
+        input_zip_path=input_images,
+        caption_text=caption_prefix,
+        mask_target_prompts=mask_target_prompts,
+        target_size=resolution,
+        crop_based_on_salience=crop_based_on_salience,
+        use_face_detection_instead=use_face_detection_instead,
+        temp=clipseg_temperature,
+    )
 
     if not os.path.exists(SDXL_MODEL_CACHE):
         download_weights(SDXL_URL, SDXL_MODEL_CACHE)

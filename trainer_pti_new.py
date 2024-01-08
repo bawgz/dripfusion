@@ -202,6 +202,7 @@ def main(
     print("dataset", dataset)
     print("column_names", column_names)
 
+    # I can do this much simpler than the original code
     # 6. Get the column names for input/target.
     # dataset_columns = DATASET_NAME_MAPPING.get(dataset_name, None)
     # if image_column is None:
@@ -221,11 +222,23 @@ def main(
     #             f"--caption_column' value '{caption_column}' needs to be one of: {', '.join(column_names)}"
     #         )
 
-    # # Preprocessing the datasets.
-    # # We need to tokenize input captions and transform the images.
-    # def tokenize_captions(examples, is_train=True):
+    # Preprocessing the datasets.
+    # We need to tokenize input captions and transform the images.
+    def tokenize_captions(dataset, is_train=True):
+        captions = []
+        for caption in dataset["captions"]:
+            captions.append(caption)
+
+        print("captions ", captions)
+
+        inputs = tokenizer(
+            captions, max_length=tokenizer.model_max_length, padding="max_length", truncation=True, return_tensors="pt"
+        )
+        return inputs.input_ids
+
+    # def tokenize_captions(dataset, is_train=True):
     #     captions = []
-    #     for caption in examples[caption_column]:
+    #     for caption in dataset["captions"]:
     #         if isinstance(caption, str):
     #             captions.append(caption)
     #         elif isinstance(caption, (list, np.ndarray)):
@@ -240,7 +253,7 @@ def main(
     #     )
     #     return inputs.input_ids
 
-    # # Preprocessing the datasets.
+    # Preprocessing the datasets.
     # train_transforms = transforms.Compose(
     #     [
     #         transforms.Resize(resolution, interpolation=transforms.InterpolationMode.BILINEAR),
