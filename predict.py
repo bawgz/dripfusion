@@ -53,11 +53,12 @@ class Predictor(BasePredictor):
             
         self.pipe = DiffusionPipeline.from_pretrained(SDXL_MODEL_CACHE, torch_dtype=torch.float16).to("cuda")
 
-        self.pipe.load_lora_weights("./", weight_name="drip_glasses.safetensors", adapter_name="TOK")
+        # self.pipe.load_lora_weights("./", weight_name="drip_glasses.safetensors", adapter_name="TOK")
+        self.pipe.load_lora_weights("./trained-model/", weight_name="lora.safetensors", adapter_name="LUK")
 
-        self.trained_model = os.path.exists("./trained-model/")
-        if self.trained_model:
-            self.pipe.load_lora_weights("./trained-model/", weight_name="lora.safetensors", adapter_name="LUK")
+        # self.trained_model = os.path.exists("./trained-model/")
+        # if self.trained_model:
+        #     self.pipe.load_lora_weights("./trained-model/", weight_name="lora.safetensors", adapter_name="LUK")
 
         print("Loading SDXL refiner pipeline...")
         # FIXME(ja): should the vae/text_encoder_2 be loaded from SDXL always?
@@ -145,9 +146,9 @@ class Predictor(BasePredictor):
             seed = int.from_bytes(os.urandom(2), "big")
         print(f"Using seed: {seed}")
 
-        if self.trained_model:
-            print("using two loras")
-            self.pipe.set_adapters(["TOK", "LUK"], adapter_weights=[lora_scale_base, lora_scale_custom])
+        # if self.trained_model:
+        #     print("using two loras")
+        #     self.pipe.set_adapters(["TOK", "LUK"], adapter_weights=[lora_scale_base, lora_scale_custom])
 
         sdxl_kwargs = {}
 
@@ -157,7 +158,7 @@ class Predictor(BasePredictor):
         elif refine == "base_image_refiner":
             sdxl_kwargs["output_type"] = "latent"
 
-        sdxl_kwargs["cross_attention_kwargs"] = {"scale": 1.0 if self.trained_model else lora_scale_base}
+        sdxl_kwargs["cross_attention_kwargs"] = {"scale": lora_scale_base}
 
         common_args = {
             "prompt": prompt,
