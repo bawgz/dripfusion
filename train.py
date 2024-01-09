@@ -4,7 +4,7 @@ import tarfile
 
 from cog import BaseModel, Input, Path
 
-from predict import SDXL_MODEL_CACHE, SDXL_URL, download_weights
+from predict import SDXL_MODEL_CACHE
 from preprocess import preprocess
 from trainer_pti import main
 
