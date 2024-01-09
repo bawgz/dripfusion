@@ -30,3 +30,5 @@ clipseg-cache/
 swin2sr-cache/
 weights-cache/
 tests/
+*.safetensors
+trained-model/
