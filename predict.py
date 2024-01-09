@@ -1,10 +1,13 @@
 from typing import List, Optional
+import json
 import os
 import time
 import subprocess
 
 import torch
+from safetensors.torch import load_file
 from cog import BasePredictor, Input, Path
+from diffusers.models.attention_processor import LoRAAttnProcessor2_0
 from diffusers import (
     DDIMScheduler,
     DiffusionPipeline,
@@ -15,9 +18,13 @@ from diffusers import (
     PNDMScheduler
 )
 
+from dataset_and_utils import TokenEmbeddingsHandler
+
 SDXL_MODEL_CACHE = "./sdxl-cache"
 
 REFINER_MODEL_CACHE = "./refiner-cache"
+
+TRAINED_MODEL_LOCATION = "./trained-model"
 
 class KarrasDPM:
     def from_config(config):
@@ -41,13 +48,104 @@ def download_weights(url, dest):
     print("downloading took: ", time.time() - start)
 
 class Predictor(BasePredictor):
+    def load_trained_weights(self, pipe):
+        from no_init import no_init_or_tensor
+
+        # weights can be a URLPath, which behaves in unexpected ways
+        # weights = str(weights)
+        # if self.tuned_weights == weights:
+        #     print("skipping loading .. weights already loaded")
+        #     return
+
+        # self.tuned_weights = weights
+
+        local_weights_cache = TRAINED_MODEL_LOCATION
+
+        # load UNET
+        print("Loading fine-tuned model")
+        self.is_lora = False
+
+        maybe_unet_path = os.path.join(local_weights_cache, "unet.safetensors")
+        if not os.path.exists(maybe_unet_path):
+            print("Does not have Unet. assume we are using LoRA")
+            self.is_lora = True
+
+        if not self.is_lora:
+            print("Loading Unet")
+
+            new_unet_params = load_file(
+                os.path.join(local_weights_cache, "unet.safetensors")
+            )
+            # this should return _IncompatibleKeys(missing_keys=[...], unexpected_keys=[])
+            pipe.unet.load_state_dict(new_unet_params, strict=False)
+
+        else:
+            print("Loading Unet LoRA")
+
+            unet = pipe.unet
+
+            tensors = load_file(os.path.join(local_weights_cache, "lora.safetensors"))
+
+            unet_lora_attn_procs = {}
+            name_rank_map = {}
+            for tk, tv in tensors.items():
+                # up is N, d
+                if tk.endswith("up.weight"):
+                    proc_name = ".".join(tk.split(".")[:-3])
+                    r = tv.shape[1]
+                    name_rank_map[proc_name] = r
+
+            for name, attn_processor in unet.attn_processors.items():
+                cross_attention_dim = (
+                    None
+                    if name.endswith("attn1.processor")
+                    else unet.config.cross_attention_dim
+                )
+                if name.startswith("mid_block"):
+                    hidden_size = unet.config.block_out_channels[-1]
+                elif name.startswith("up_blocks"):
+                    block_id = int(name[len("up_blocks.")])
+                    hidden_size = list(reversed(unet.config.block_out_channels))[
+                        block_id
+                    ]
+                elif name.startswith("down_blocks"):
+                    block_id = int(name[len("down_blocks.")])
+                    hidden_size = unet.config.block_out_channels[block_id]
+                with no_init_or_tensor():
+                    module = LoRAAttnProcessor2_0(
+                        hidden_size=hidden_size,
+                        cross_attention_dim=cross_attention_dim,
+                        rank=name_rank_map[name],
+                    )
+                unet_lora_attn_procs[name] = module.to("cuda", non_blocking=True)
+
+            unet.set_attn_processor(unet_lora_attn_procs)
+            unet.load_state_dict(tensors, strict=False)
+
+        # load text
+        handler = TokenEmbeddingsHandler(
+            [pipe.text_encoder, pipe.text_encoder_2], [pipe.tokenizer, pipe.tokenizer_2]
+        )
+        handler.load_embeddings(os.path.join(local_weights_cache, "embeddings.pti"))
+
+        # load params
+        with open(os.path.join(local_weights_cache, "special_params.json"), "r") as f:
+            params = json.load(f)
+        self.token_map = params
+
+        self.tuned_model = True
+
+
     def setup(self, weights: Optional[Path] = None):
         print("weights: ", weights)
             
         self.pipe = DiffusionPipeline.from_pretrained(SDXL_MODEL_CACHE, torch_dtype=torch.float16).to("cuda")
 
+        if os.path.exists(TRAINED_MODEL_LOCATION):
+            self.load_trained_weights(self.pipe)
+
         # self.pipe.load_lora_weights("./", weight_name="drip_glasses.safetensors", adapter_name="TOK")
-        self.pipe.load_lora_weights("./trained-model/", weight_name="lora.safetensors", adapter_name="LUK")
+        # self.pipe.load_lora_weights("./trained-model/", weight_name="lora.safetensors", adapter_name="LUK")
 
         # self.trained_model = os.path.exists("./trained-model/")
         # if self.trained_model:
@@ -101,18 +199,18 @@ class Predictor(BasePredictor):
         seed: int = Input(
             description="Random seed. Leave blank to randomize the seed", default=None
         ),
-        lora_scale_base: float = Input(
+        lora_scale: float = Input(
             description="LoRA additive scale for base dripfusion lora",
             ge=0.0,
             le=1.0,
             default=0.6,
         ),
-        lora_scale_custom: float = Input(
-            description="LoRA additive scale. Only applicable on trained models.",
-            ge=0.0,
-            le=1.0,
-            default=0.6,
-        ),
+        # lora_scale_custom: float = Input(
+        #     description="LoRA additive scale. Only applicable on trained models.",
+        #     ge=0.0,
+        #     le=1.0,
+        #     default=0.6,
+        # ),
         refine: str = Input(
             description="Which refine style to use",
             choices=["no_refiner", "expert_ensemble_refiner", "base_image_refiner"],
@@ -149,7 +247,7 @@ class Predictor(BasePredictor):
         elif refine == "base_image_refiner":
             sdxl_kwargs["output_type"] = "latent"
 
-        sdxl_kwargs["cross_attention_kwargs"] = {"scale": lora_scale_base}
+        sdxl_kwargs["cross_attention_kwargs"] = {"scale": lora_scale}
 
         common_args = {
             "prompt": prompt,

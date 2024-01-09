@@ -17,6 +17,12 @@ pipe = DiffusionPipeline.from_pretrained(
     variant="fp16",
 )
 
+pipe.load_lora_weights("bawgz/dripfusion", weight_name="dripglasses.safetensors", adapter_name="DRIP")
+
+pipe.set_adapters(["DRIP"], adapter_weights=[0.6])
+
+pipe.fuse_lora()
+
 pipe.save_pretrained("./sdxl-cache", safe_serialization=True)
 
 pipe = DiffusionPipeline.from_pretrained(
