@@ -3,41 +3,35 @@
 # internet, which will take a long time.
 
 import torch
-import sys
+import os
 from diffusers import AutoencoderKL, DiffusionPipeline
 
-def main(token):
-  better_vae = AutoencoderKL.from_pretrained(
-      "madebyollin/sdxl-vae-fp16-fix", torch_dtype=torch.float16
-  )
+better_vae = AutoencoderKL.from_pretrained(
+    "madebyollin/sdxl-vae-fp16-fix", torch_dtype=torch.float16
+)
 
-  pipe = DiffusionPipeline.from_pretrained(
-      "SG161222/RealVisXL_V3.0",
-      vae=better_vae,
-      torch_dtype=torch.float16,
-      use_safetensors=True,
-      variant="fp16",
-  )
+pipe = DiffusionPipeline.from_pretrained(
+    "SG161222/RealVisXL_V3.0",
+    vae=better_vae,
+    torch_dtype=torch.float16,
+    use_safetensors=True,
+    variant="fp16",
+)
 
-  pipe.load_lora_weights("bawgz/dripfusion", weight_name="dripglasses.safetensors", adapter_name="DRIP", token=token)
+pipe.load_lora_weights("bawgz/dripfusion", weight_name="dripglasses.safetensors", adapter_name="DRIP", token=os.getenv("token"))
 
-  pipe.set_adapters(["DRIP"], adapter_weights=[0.6])
+pipe.set_adapters(["DRIP"], adapter_weights=[0.6])
 
-  pipe.fuse_lora()
+pipe.fuse_lora()
 
-  pipe.save_pretrained("./sdxl-cache", safe_serialization=True)
+pipe.save_pretrained("./sdxl-cache", safe_serialization=True)
 
-  pipe = DiffusionPipeline.from_pretrained(
-      "stabilityai/stable-diffusion-xl-refiner-1.0",
-      torch_dtype=torch.float16,
-      use_safetensors=True,
-      variant="fp16",
-  )
+pipe = DiffusionPipeline.from_pretrained(
+    "stabilityai/stable-diffusion-xl-refiner-1.0",
+    torch_dtype=torch.float16,
+    use_safetensors=True,
+    variant="fp16",
+)
 
-  # TODO - we don't need to save all of this and in fact should save just the unet, tokenizer, and config.
-  pipe.save_pretrained("./refiner-cache", safe_serialization=True)
-
-
-if __name__ == "__main__":
-    hf_token = int(sys.argv[1])
-    main(hf_token)
+# TODO - we don't need to save all of this and in fact should save just the unet, tokenizer, and config.
+pipe.save_pretrained("./refiner-cache", safe_serialization=True)
