@@ -10,7 +10,7 @@ better_vae = AutoencoderKL.from_pretrained(
 )
 
 pipe = DiffusionPipeline.from_pretrained(
-    "stabilityai/stable-diffusion-xl-base-1.0",
+    "SG161222/RealVisXL_V3.0",
     vae=better_vae,
     torch_dtype=torch.float16,
     use_safetensors=True,

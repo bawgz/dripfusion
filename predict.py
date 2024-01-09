@@ -16,12 +16,8 @@ from diffusers import (
 )
 
 SDXL_MODEL_CACHE = "./sdxl-cache"
-SDXL_URL = "https://weights.replicate.delivery/default/sdxl/sdxl-vae-upcast-fix.tar"
 
 REFINER_MODEL_CACHE = "./refiner-cache"
-REFINER_URL = (
-    "https://weights.replicate.delivery/default/sdxl/refiner-no-vae-no-encoder-1.0.tar"
-)
 
 class KarrasDPM:
     def from_config(config):
@@ -47,9 +43,6 @@ def download_weights(url, dest):
 class Predictor(BasePredictor):
     def setup(self, weights: Optional[Path] = None):
         print("weights: ", weights)
-        
-        if not os.path.exists(SDXL_MODEL_CACHE):
-            download_weights(SDXL_URL, SDXL_MODEL_CACHE)
             
         self.pipe = DiffusionPipeline.from_pretrained(SDXL_MODEL_CACHE, torch_dtype=torch.float16).to("cuda")
 
@@ -66,8 +59,6 @@ class Predictor(BasePredictor):
         # FIXME(ja): if the answer to above is use VAE/Text_Encoder_2 from fine-tune
         #            what does this imply about lora + refiner? does the refiner need to know about
 
-        if not os.path.exists(REFINER_MODEL_CACHE):
-            download_weights(REFINER_URL, REFINER_MODEL_CACHE)
 
         print("Loading refiner pipeline...")
         self.refiner = DiffusionPipeline.from_pretrained(
