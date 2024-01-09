@@ -1,0 +1,24 @@
+name: Push to Replicate
+
+on: workflow_dispatch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Setup Cog
+        uses: replicate/setup-cog@v1
+        with:
+          token: ${{ secrets.REPLICATE_API_TOKEN }}
+
+      - name: Download weights
+        run: cog run python script/download-weights
+        with:
+          token: ${{ secrets.HUGGINGFACE_TOKEN }}
+
+      - name: Push to Replicate
+        run: |
+          cog push r8.im/bawgz/dripfusion-base
