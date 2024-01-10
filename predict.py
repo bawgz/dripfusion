@@ -147,7 +147,7 @@ class Predictor(BasePredictor):
             # load embeddings of text_encoder 1 (CLIP ViT-L/14)
             self.pipe.load_textual_inversion(state_dict["clip_l"], token=["<s0>", "<s1>"], text_encoder=self.pipe.text_encoder, tokenizer=self.pipe.tokenizer)
             # load embeddings of text_encoder 2 (CLIP ViT-G/14)
-            self.pipe.load_textual_inversion(state_dict["clip_g"], token=["<s0>", "<s1>"], text_encoder=self.pipe.text_encoder_2, tokenizer=pipe.tokenizer_2)
+            self.pipe.load_textual_inversion(state_dict["clip_g"], token=["<s0>", "<s1>"], text_encoder=self.pipe.text_encoder_2, tokenizer=self.pipe.tokenizer_2)
             self.pipe.load_lora_weights(TRAINED_MODEL_LOCATION, weight_name="lora.safetensors", adapter_name="TOK")
 
             #self.load_trained_weights(self.pipe)
