@@ -142,13 +142,13 @@ class Predictor(BasePredictor):
         self.pipe = DiffusionPipeline.from_pretrained(SDXL_MODEL_CACHE, torch_dtype=torch.float16).to("cuda")
 
         if os.path.exists(TRAINED_MODEL_LOCATION):
-            state_dict = load_file(os.path.join(TRAINED_MODEL_LOCATION, "embeddings.pti"))
+            state_dict = load_file(os.path.join(TRAINED_MODEL_LOCATION, "lb_emb.safetensors"))
             # notice we load the tokens <s0><s1>, as "TOK" as only a place-holder and training was performed using the new initialized tokens - <s0><s1>
             # load embeddings of text_encoder 1 (CLIP ViT-L/14)
             self.pipe.load_textual_inversion(state_dict["clip_l"], token=["<s0>", "<s1>"], text_encoder=self.pipe.text_encoder, tokenizer=self.pipe.tokenizer)
             # load embeddings of text_encoder 2 (CLIP ViT-G/14)
             self.pipe.load_textual_inversion(state_dict["clip_g"], token=["<s0>", "<s1>"], text_encoder=self.pipe.text_encoder_2, tokenizer=self.pipe.tokenizer_2)
-            self.pipe.load_lora_weights(TRAINED_MODEL_LOCATION, weight_name="lora.safetensors", adapter_name="TOK")
+            self.pipe.load_lora_weights(TRAINED_MODEL_LOCATION, weight_name="pytorch_lora_weights.safetensors", adapter_name="TOK")
 
             #self.load_trained_weights(self.pipe)
 
