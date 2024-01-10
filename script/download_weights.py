@@ -19,7 +19,7 @@ def main(token):
         variant="fp16",
     )
 
-    pipe.load_lora_weights("bawgz/dripfusion", weight_name="drip_glasses.safetensors", adapter_name="DRIP", token=token)
+    pipe.load_lora_weights("bawgz/dripfusion", weight_name="drip_glasses.safetensors", adapter_name="DRIP", use_auth_token=token)
 
     pipe.set_adapters(["DRIP"], adapter_weights=[0.6])
 
