@@ -149,6 +149,7 @@ class Predictor(BasePredictor):
             # load embeddings of text_encoder 2 (CLIP ViT-G/14)
             self.pipe.load_textual_inversion(state_dict["clip_g"], token=["<s0>", "<s1>"], text_encoder=self.pipe.text_encoder_2, tokenizer=self.pipe.tokenizer_2)
             self.pipe.load_lora_weights(TRAINED_MODEL_LOCATION, weight_name="pytorch_lora_weights.safetensors", adapter_name="TOK")
+            self.pipe.load_lora_weights(TRAINED_MODEL_LOCATION, weight_name="drip_glasses.safetensors", adapter_name="DRIP")
 
             #self.load_trained_weights(self.pipe)
 
@@ -247,6 +248,9 @@ class Predictor(BasePredictor):
         # if self.trained_model:
         #     print("using two loras")
         #     self.pipe.set_adapters(["TOK", "LUK"], adapter_weights=[lora_scale_base, lora_scale_custom])
+
+
+        self.pipe.set_adapters(["TOK", "DRIP"], adapter_weights=[lora_scale, 0.6])
 
         sdxl_kwargs = {}
 
