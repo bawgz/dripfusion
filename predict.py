@@ -139,7 +139,12 @@ class Predictor(BasePredictor):
     def setup(self, weights: Optional[Path] = None):
         print("weights: ", weights)
             
-        self.pipe = DiffusionPipeline.from_pretrained(SDXL_MODEL_CACHE, torch_dtype=torch.float16).to("cuda")
+        self.pipe = DiffusionPipeline.from_pretrained(
+            SDXL_MODEL_CACHE,
+            torch_dtype=torch.float16,
+            use_safetensors=True,
+            variant="fp16"
+        ).to("cuda")
 
         if os.path.exists(TRAINED_MODEL_LOCATION):
             state_dict = load_file(os.path.join(TRAINED_MODEL_LOCATION, "lb_emb.safetensors"))
