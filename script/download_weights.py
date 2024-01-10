@@ -5,8 +5,13 @@
 import torch
 import sys
 from diffusers import AutoencoderKL, DiffusionPipeline
+from huggingface_hub import hf_hub_download
 
 def main(token):
+    print(token)
+    hf_hub_download(repo_id="bawgz/lb", filename="lb_emb.safetensors", repo_type="model", use_auth_token=token, local_dir="./trained-model")
+    hf_hub_download(repo_id="bawgz/lb", filename="pytorch_lora_weights.safetensors", repo_type="model", use_auth_token=token, local_dir="./trained-model")
+
     better_vae = AutoencoderKL.from_pretrained(
         "madebyollin/sdxl-vae-fp16-fix", torch_dtype=torch.float16
     )
