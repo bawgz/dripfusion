@@ -152,7 +152,11 @@ class Predictor(BasePredictor):
             variant="fp16"
         ).to("cuda")
 
-        if os.path.exists(TRAINED_MODEL_LOCATION):
+        self.pipe.load_lora_weights("./", weight_name="drip_glasses.safetensors", adapter_name="DRIP")
+
+        self.trained_model = os.path.exists(TRAINED_MODEL_LOCATION)
+
+        if self.trained_model:
             state_dict = load_file(os.path.join(TRAINED_MODEL_LOCATION, "embeddings.pti"))
 
             print("State dict[\"text_encoders_0\"]", state_dict["text_encoders_0"])
@@ -163,7 +167,6 @@ class Predictor(BasePredictor):
             # load embeddings of text_encoder 2 (CLIP ViT-G/14)
             self.pipe.load_textual_inversion(state_dict["text_encoders_1"], token=["<s0>", "<s1>"], text_encoder=self.pipe.text_encoder_2, tokenizer=self.pipe.tokenizer_2)
             self.pipe.load_lora_weights(TRAINED_MODEL_LOCATION, weight_name="lora.safetensors", adapter_name="TOK")
-            self.pipe.load_lora_weights(TRAINED_MODEL_LOCATION, weight_name="drip_glasses.safetensors", adapter_name="DRIP")
 
             #self.load_trained_weights(self.pipe)
 
@@ -222,7 +225,7 @@ class Predictor(BasePredictor):
         seed: int = Input(
             description="Random seed. Leave blank to randomize the seed", default=None
         ),
-        lora_scale: float = Input(
+        lora_scale_base: float = Input(
             description="LoRA additive scale for base dripfusion lora",
             ge=0.0,
             le=1.0,
@@ -264,7 +267,8 @@ class Predictor(BasePredictor):
         #     self.pipe.set_adapters(["TOK", "LUK"], adapter_weights=[lora_scale_base, lora_scale_custom])
 
 
-        self.pipe.set_adapters(["TOK", "DRIP"], adapter_weights=[lora_scale_custom, lora_scale])
+        if self.trained_model:
+            self.pipe.set_adapters(["TOK", "DRIP"], adapter_weights=[lora_scale_custom, lora_scale_base])
 
         sdxl_kwargs = {}
 
@@ -274,7 +278,7 @@ class Predictor(BasePredictor):
         elif refine == "base_image_refiner":
             sdxl_kwargs["output_type"] = "latent"
 
-        sdxl_kwargs["cross_attention_kwargs"] = {"scale": 1.0}
+        sdxl_kwargs["cross_attention_kwargs"] = {"scale": 1.0 if self.trained_model else lora_scale_base}
 
         common_args = {
             "prompt": prompt,
