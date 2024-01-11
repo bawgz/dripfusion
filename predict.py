@@ -154,6 +154,8 @@ class Predictor(BasePredictor):
 
         if os.path.exists(TRAINED_MODEL_LOCATION):
             state_dict = load_file(os.path.join(TRAINED_MODEL_LOCATION, "lb_emb.safetensors"))
+
+            print("State dict", state_dict)
             # notice we load the tokens <s0><s1>, as "TOK" as only a place-holder and training was performed using the new initialized tokens - <s0><s1>
             # load embeddings of text_encoder 1 (CLIP ViT-L/14)
             self.pipe.load_textual_inversion(state_dict["clip_l"], token=["<s0>", "<s1>"], text_encoder=self.pipe.text_encoder, tokenizer=self.pipe.tokenizer)
