@@ -228,12 +228,12 @@ class Predictor(BasePredictor):
             le=1.0,
             default=0.6,
         ),
-        # lora_scale_custom: float = Input(
-        #     description="LoRA additive scale. Only applicable on trained models.",
-        #     ge=0.0,
-        #     le=1.0,
-        #     default=0.6,
-        # ),
+        lora_scale_custom: float = Input(
+            description="LoRA additive scale. Only applicable on trained models.",
+            ge=0.0,
+            le=1.0,
+            default=0.6,
+        ),
         refine: str = Input(
             description="Which refine style to use",
             choices=["no_refiner", "expert_ensemble_refiner", "base_image_refiner"],
@@ -264,7 +264,7 @@ class Predictor(BasePredictor):
         #     self.pipe.set_adapters(["TOK", "LUK"], adapter_weights=[lora_scale_base, lora_scale_custom])
 
 
-        self.pipe.set_adapters(["TOK", "DRIP"], adapter_weights=[lora_scale, 0.6])
+        self.pipe.set_adapters(["TOK", "DRIP"], adapter_weights=[lora_scale_custom, lora_scale])
 
         sdxl_kwargs = {}
 
@@ -274,7 +274,7 @@ class Predictor(BasePredictor):
         elif refine == "base_image_refiner":
             sdxl_kwargs["output_type"] = "latent"
 
-        sdxl_kwargs["cross_attention_kwargs"] = {"scale": lora_scale}
+        sdxl_kwargs["cross_attention_kwargs"] = {"scale": 1.0}
 
         common_args = {
             "prompt": prompt,
