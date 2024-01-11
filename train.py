@@ -11,7 +11,7 @@ from trainer_pti import main
 """
 Wrapper around actual trainer.
 """
-OUTPUT_DIR = "training_out"
+OUTPUT_DIR = "trained-model"
 
 
 class TrainingOutput(BaseModel):
