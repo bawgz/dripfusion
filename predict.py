@@ -26,6 +26,8 @@ REFINER_MODEL_CACHE = "./refiner-cache"
 
 TRAINED_MODEL_LOCATION = "./trained-model"
 
+SDXL_URL = "https://weights.replicate.delivery/default/sdxl/sdxl-vae-upcast-fix.tar"
+
 class KarrasDPM:
     def from_config(config):
         return DPMSolverMultistepScheduler.from_config(config, use_karras_sigmas=True)
@@ -138,7 +140,11 @@ class Predictor(BasePredictor):
 
     def setup(self, weights: Optional[Path] = None):
         print("weights: ", weights)
-            
+
+        if not os.path.exists(SDXL_MODEL_CACHE):
+            download_weights(SDXL_URL, SDXL_MODEL_CACHE)
+
+        print("Loading sdxl txt2img pipeline...")
         self.pipe = DiffusionPipeline.from_pretrained(
             SDXL_MODEL_CACHE,
             torch_dtype=torch.float16,
