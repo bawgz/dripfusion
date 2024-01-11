@@ -157,6 +157,7 @@ class Predictor(BasePredictor):
         self.trained_model = os.path.exists(TRAINED_MODEL_LOCATION)
 
         if self.trained_model:
+            print("Loading fine-tuned model")
             state_dict = load_file(os.path.join(TRAINED_MODEL_LOCATION, "embeddings.pti"))
 
             print("State dict[\"text_encoders_0\"]", state_dict["text_encoders_0"])
@@ -268,6 +269,7 @@ class Predictor(BasePredictor):
 
 
         if self.trained_model:
+            print("using two loras")
             self.pipe.set_adapters(["TOK", "DRIP"], adapter_weights=[lora_scale_custom, lora_scale_base])
 
         sdxl_kwargs = {}
