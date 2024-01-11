@@ -154,9 +154,13 @@ class Predictor(BasePredictor):
 
         self.pipe.load_lora_weights("./", weight_name="drip_glasses.safetensors", adapter_name="DRIP")
 
-        self.trained_model = os.path.exists(TRAINED_MODEL_LOCATION)
+        self.trained_model = weights or os.path.exists(TRAINED_MODEL_LOCATION)
 
         if self.trained_model:
+            if not os.path.exists(TRAINED_MODEL_LOCATION):
+                print("downloading weights")
+                download_weights(weights, TRAINED_MODEL_LOCATION)
+            
             print("Loading fine-tuned model")
             state_dict = load_file(os.path.join(TRAINED_MODEL_LOCATION, "embeddings.pti"))
 
