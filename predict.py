@@ -140,6 +140,9 @@ class Predictor(BasePredictor):
 
     def setup(self, weights: Optional[Path] = None):
         print("weights: ", weights)
+        
+        if str(weights) == "weights":
+            weights = None
 
         if not os.path.exists(SDXL_MODEL_CACHE):
             download_weights(SDXL_URL, SDXL_MODEL_CACHE)
@@ -197,13 +200,11 @@ class Predictor(BasePredictor):
             torch_dtype=torch.float16,
             use_safetensors=True,
             variant="fp16",
-        )
+        ).to("cuda")
 
         # FIXME: should I load lora weights to the refiner? Below does not work
         # print("setting refiner adapters")
         # self.refiner.load_lora_weights("./trained-model-luk/", weight_name="lora.safetensors", adapter_name="LUK")
-
-        self.refiner.to("cuda")
 
     @torch.inference_mode()
     def predict(
