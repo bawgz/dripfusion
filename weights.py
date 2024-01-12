@@ -79,6 +79,8 @@ class WeightsDownloadCache:
         """
         path = self.weights_path(url)
 
+        print("Path in LRU: ", path)
+
         if path in self.lru_paths:
             # here we remove to re-add to the end of the LRU (marking it as recently used)
             self._hits += 1
@@ -88,6 +90,8 @@ class WeightsDownloadCache:
             self.download_weights(url, path)
 
         self.lru_paths.append(path)  # Add file to end of cache
+
+        print("LRU: ", self.lru_paths)
         return path
 
     def weights_path(self, url: str) -> str:

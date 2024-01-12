@@ -19,6 +19,7 @@ from diffusers import (
 )
 
 from dataset_and_utils import TokenEmbeddingsHandler
+from weights import WeightsDownloadCache
 
 SDXL_MODEL_CACHE = "./sdxl-cache"
 
@@ -55,6 +56,8 @@ class Predictor(BasePredictor):
         
         if str(weights) == "weights":
             weights = None
+
+        self.weights_cache = WeightsDownloadCache()
 
         print("Loading sdxl txt2img pipeline...")
 
@@ -101,7 +104,7 @@ class Predictor(BasePredictor):
             self.pipe.load_lora_weights(TRAINED_MODEL_LOCATION, weight_name="lora.safetensors", adapter_name="TOK")
 
         self.pipe.to("cuda")
-        
+
         print("Loading SDXL refiner pipeline...")
         # FIXME(ja): should the vae/text_encoder_2 be loaded from SDXL always?
         #            - in the case of fine-tuned SDXL should we still?
@@ -211,16 +214,16 @@ class Predictor(BasePredictor):
         if replicate_weights:
             print("downloading weights")
             self.trained_model = True
-            download_weights(replicate_weights, TRAINED_MODEL_LOCATION)
+            local_weights_cache = self.weights_cache.ensure(replicate_weights)
             
-            state_dict = load_file(os.path.join(TRAINED_MODEL_LOCATION, "embeddings.pti"))
+            state_dict = load_file(os.path.join(local_weights_cache, "embeddings.pti"))
 
             # notice we load the tokens <s0><s1>, as "TOK" as only a place-holder and training was performed using the new initialized tokens - <s0><s1>
             # load embeddings of text_encoder 1 (CLIP ViT-L/14)
             self.pipe.load_textual_inversion(state_dict["text_encoders_0"], token=["<s0>", "<s1>"], text_encoder=self.pipe.text_encoder, tokenizer=self.pipe.tokenizer)
             # load embeddings of text_encoder 2 (CLIP ViT-G/14)
             self.pipe.load_textual_inversion(state_dict["text_encoders_1"], token=["<s0>", "<s1>"], text_encoder=self.pipe.text_encoder_2, tokenizer=self.pipe.tokenizer_2)
-            self.pipe.load_lora_weights(TRAINED_MODEL_LOCATION, weight_name="lora.safetensors", adapter_name="TOK")
+            self.pipe.load_lora_weights(local_weights_cache, weight_name="lora.safetensors", adapter_name="TOK")
 
 
         if self.trained_model:
