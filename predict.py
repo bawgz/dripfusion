@@ -206,7 +206,7 @@ class Predictor(BasePredictor):
             seed = int.from_bytes(os.urandom(2), "big")
         print(f"Using seed: {seed}")
 
-        if self.replicate_weights:
+        if replicate_weights:
             print("downloading weights")
             self.trained_model = True
             download_weights(replicate_weights, TRAINED_MODEL_LOCATION)
