@@ -3,6 +3,7 @@ import os
 import time
 import subprocess
 
+import torch.nn as nn
 import torch
 from safetensors.torch import load_file
 from cog import BasePredictor, Input, Path
@@ -86,9 +87,9 @@ class Predictor(BasePredictor):
 
         self.pipe.load_lora_weights("./", weight_name="drip_glasses.safetensors", adapter_name="DRIP")
 
-        self.trained_model = weights or os.path.exists(TRAINED_MODEL_LOCATION)
+        self.is_trained_model = weights or os.path.exists(TRAINED_MODEL_LOCATION)
 
-        if self.trained_model:
+        if self.is_trained_model:
             if not os.path.exists(TRAINED_MODEL_LOCATION):
                 print("downloading weights")
                 download_weights(weights, TRAINED_MODEL_LOCATION)
@@ -141,6 +142,22 @@ class Predictor(BasePredictor):
         # print("setting refiner adapters")
         # self.refiner.load_lora_weights("./trained-model-luk/", weight_name="lora.safetensors", adapter_name="LUK")
 
+    def reset_tokenizer_and_encoder(self, tokenizer, text_encoder, tokens_to_remove):
+        for token_to_remove in tokens_to_remove:
+            token_id = tokenizer(token_to_remove)["input_ids"][1]
+            del tokenizer._added_tokens_decoder[token_id]
+            del tokenizer._added_tokens_encoder[token_to_remove]
+            tokenizer._update_trie()
+
+        tokenizer_size = len(tokenizer)
+        text_embedding_dim = text_encoder.get_input_embeddings().embedding_dim
+        text_embedding_weights = text_encoder.get_input_embeddings().weight[
+            :tokenizer_size
+        ]
+        text_embeddings_filtered = nn.Embedding(tokenizer_size, text_embedding_dim)
+        text_embeddings_filtered.weight.data = text_embedding_weights
+        text_encoder.set_input_embeddings(text_embeddings_filtered)
+
     @torch.inference_mode()
     def predict(
         self,
@@ -179,9 +196,10 @@ class Predictor(BasePredictor):
             default=0.6,
         ),
         replicate_weights: str = Input(
-            description="Replicate LoRA weights to use. Leave blank to use the default weights.",
+            description="Replicate LoRA weights to use. This is ignored in the case of a trained model",
             default=None,
         ),
+        # TODO: remove this one... just here to see sumn real quick
         custom_weights: str = Input(
             description="Replicate LoRA weights to use. Leave blank to use the default weights.",
             default=None,
@@ -211,9 +229,8 @@ class Predictor(BasePredictor):
             seed = int.from_bytes(os.urandom(2), "big")
         print(f"Using seed: {seed}")
 
-        if replicate_weights:
+        if replicate_weights and not self.is_trained_model:
             print("downloading weights")
-            self.trained_model = True
             local_weights_cache = self.weights_cache.ensure(replicate_weights)
             
             state_dict = load_file(os.path.join(local_weights_cache, "embeddings.pti"))
@@ -225,8 +242,9 @@ class Predictor(BasePredictor):
             self.pipe.load_textual_inversion(state_dict["text_encoders_1"], token=["<s0>", "<s1>"], text_encoder=self.pipe.text_encoder_2, tokenizer=self.pipe.tokenizer_2)
             self.pipe.load_lora_weights(local_weights_cache, weight_name="lora.safetensors", adapter_name="TOK")
 
+        is_using_two_loras = self.is_trained_model or replicate_weights
 
-        if self.trained_model:
+        if is_using_two_loras:
             print("using two loras")
             self.pipe.set_adapters(["TOK", "DRIP"], adapter_weights=[lora_scale_custom, lora_scale_base])
 
@@ -238,7 +256,7 @@ class Predictor(BasePredictor):
         elif refine == "base_image_refiner":
             sdxl_kwargs["output_type"] = "latent"
 
-        sdxl_kwargs["cross_attention_kwargs"] = {"scale": 1.0 if self.trained_model else lora_scale_base}
+        sdxl_kwargs["cross_attention_kwargs"] = {"scale": 1.0 if is_using_two_loras else lora_scale_base}
 
         common_args = {
             "prompt": prompt,
@@ -274,5 +292,11 @@ class Predictor(BasePredictor):
             output_path = f"/tmp/out-{i}.png"
             image.save(output_path)
             output_paths.append(Path(output_path))
+
+        if replicate_weights and not self.is_trained_model:
+            print("unloading lora and text encoder")
+            self.pipe.delete_adapters("TOK")
+            self.reset_tokenizer_and_encoder(self.pipe.tokenizer, self.pipe.text_encoder, ["<s0>", "<s1>"])
+            self.reset_tokenizer_and_encoder(self.pipe.tokenizer_2, self.pipe.text_encoder_2, ["<s0>", "<s1>"])
 
         return output_paths
