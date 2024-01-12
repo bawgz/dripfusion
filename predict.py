@@ -100,6 +100,8 @@ class Predictor(BasePredictor):
             self.pipe.load_textual_inversion(state_dict["text_encoders_1"], token=["<s0>", "<s1>"], text_encoder=self.pipe.text_encoder_2, tokenizer=self.pipe.tokenizer_2)
             self.pipe.load_lora_weights(TRAINED_MODEL_LOCATION, weight_name="lora.safetensors", adapter_name="TOK")
 
+        self.pipe.to("cuda")
+        
         print("Loading SDXL refiner pipeline...")
         # FIXME(ja): should the vae/text_encoder_2 be loaded from SDXL always?
         #            - in the case of fine-tuned SDXL should we still?
