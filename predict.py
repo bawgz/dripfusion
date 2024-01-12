@@ -195,11 +195,6 @@ class Predictor(BasePredictor):
             le=1.0,
             default=0.6,
         ),
-        replicate_weights: str = Input(
-            description="Replicate LoRA weights to use. This is ignored in the case of a trained model",
-            default=None,
-        ),
-        # TODO: remove this one... just here to see sumn real quick
         custom_weights: str = Input(
             description="Replicate LoRA weights to use. Leave blank to use the default weights.",
             default=None,
@@ -229,9 +224,9 @@ class Predictor(BasePredictor):
             seed = int.from_bytes(os.urandom(2), "big")
         print(f"Using seed: {seed}")
 
-        if replicate_weights and not self.is_trained_model:
+        if custom_weights and not self.is_trained_model:
             print("downloading weights")
-            local_weights_cache = self.weights_cache.ensure(replicate_weights)
+            local_weights_cache = self.weights_cache.ensure(custom_weights)
             
             state_dict = load_file(os.path.join(local_weights_cache, "embeddings.pti"))
 
@@ -242,7 +237,7 @@ class Predictor(BasePredictor):
             self.pipe.load_textual_inversion(state_dict["text_encoders_1"], token=["<s0>", "<s1>"], text_encoder=self.pipe.text_encoder_2, tokenizer=self.pipe.tokenizer_2)
             self.pipe.load_lora_weights(local_weights_cache, weight_name="lora.safetensors", adapter_name="TOK")
 
-        is_using_two_loras = self.is_trained_model or replicate_weights
+        is_using_two_loras = self.is_trained_model or custom_weights
 
         if is_using_two_loras:
             print("using two loras")
@@ -293,7 +288,7 @@ class Predictor(BasePredictor):
             image.save(output_path)
             output_paths.append(Path(output_path))
 
-        if replicate_weights and not self.is_trained_model:
+        if custom_weights and not self.is_trained_model:
             print("unloading lora and text encoder")
             self.pipe.delete_adapters("TOK")
             self.reset_tokenizer_and_encoder(self.pipe.tokenizer, self.pipe.text_encoder, ["<s0>", "<s1>"])
