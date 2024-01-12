@@ -80,12 +80,15 @@ class WeightsDownloadCache:
         path = self.weights_path(url)
 
         print("Path in LRU: ", path)
+        print("LRU: ", self.lru_paths)
 
         if path in self.lru_paths:
             # here we remove to re-add to the end of the LRU (marking it as recently used)
+            print("cache hit")
             self._hits += 1
             self.lru_paths.remove(path)
         else:
+            print("cache miss")
             self._misses += 1
             self.download_weights(url, path)
 
