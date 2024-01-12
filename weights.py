@@ -117,6 +117,7 @@ class WeightsDownloadCache:
         """
         print("Ensuring enough disk space...")
         while not self._has_enough_space() and len(self.lru_paths) > 0:
+            print("Removing least recently used weights file...")
             self._remove_least_recent()
 
         print(f"Downloading weights: {url}")
