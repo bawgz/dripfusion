@@ -11,7 +11,7 @@ def main(token):
     # hf_hub_download(repo_id="bawgz/dripfusion", filename="drip_glasses.safetensors", repo_type="model", local_dir="./", local_dir_use_symlinks=False, use_auth_token=token)
 
     pipe = DiffusionPipeline.from_pretrained(
-        "bawgz/dripfusion-base",
+        pretrained_model_name_or_path="bawgz/dripfusion-base",
         torch_dtype=torch.float16,
         use_safetensors=True,
         variant="fp16",
