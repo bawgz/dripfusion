@@ -63,20 +63,19 @@ class Predictor(BasePredictor):
         print("Loading sdxl txt2img pipeline...")
 
         if not os.path.exists(SDXL_MODEL_CACHE):
-            better_vae = AutoencoderKL.from_pretrained(
-                "madebyollin/sdxl-vae-fp16-fix",
-                torch_dtype=torch.float16
-            )
+            # better_vae = AutoencoderKL.from_pretrained(
+            #     "madebyollin/sdxl-vae-fp16-fix",
+            #     torch_dtype=torch.float16
+            # )
 
             self.pipe = DiffusionPipeline.from_pretrained(
-                "stabilityai/stable-diffusion-xl-base-1.0",
-                vae=better_vae,
+                "bawgz/dripfusion-base",
                 torch_dtype=torch.float16,
                 use_safetensors=True,
                 variant="fp16",
             )
 
-            self.pipe.save_pretrained("./sdxl-cache", safe_serialization=True)
+            self.pipe.save_pretrained("./sdxl-cache", safe_serialization=True, variant="fp16")
         else:
             self.pipe = DiffusionPipeline.from_pretrained(
                 SDXL_MODEL_CACHE,
@@ -85,7 +84,7 @@ class Predictor(BasePredictor):
                 variant="fp16"
             )
 
-        self.pipe.load_lora_weights("./", weight_name="drip_glasses.safetensors", adapter_name="DRIP")
+        # self.pipe.load_lora_weights("./", weight_name="drip_glasses.safetensors", adapter_name="DRIP")
 
         self.is_trained_model = weights or os.path.exists(TRAINED_MODEL_LOCATION)
 
@@ -237,7 +236,8 @@ class Predictor(BasePredictor):
             self.pipe.load_textual_inversion(state_dict["text_encoders_1"], token=["<s0>", "<s1>"], text_encoder=self.pipe.text_encoder_2, tokenizer=self.pipe.tokenizer_2)
             self.pipe.load_lora_weights(local_weights_cache, weight_name="lora.safetensors", adapter_name="TOK")
 
-        is_using_two_loras = self.is_trained_model or custom_weights
+        # is_using_two_loras = self.is_trained_model or custom_weights
+        is_using_two_loras = False
 
         if is_using_two_loras:
             print("using two loras")
