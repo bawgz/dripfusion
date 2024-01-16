@@ -28,7 +28,7 @@ REFINER_MODEL_CACHE = "./refiner-cache"
 
 TRAINED_MODEL_LOCATION = "./trained-model"
 
-SDXL_URL = "https://weights.replicate.delivery/default/sdxl/sdxl-vae-upcast-fix.tar"
+# SDXL_URL = "https://weights.replicate.delivery/default/sdxl/sdxl-vae-upcast-fix.tar"
 
 class KarrasDPM:
     def from_config(config):
@@ -69,13 +69,13 @@ class Predictor(BasePredictor):
             # )
 
             self.pipe = DiffusionPipeline.from_pretrained(
-                "bawgz/dripfusion-base",
+                "SG161222/RealVisXL_V3.0",
                 torch_dtype=torch.float16,
                 use_safetensors=True,
                 variant="fp16",
             )
 
-            self.pipe.save_pretrained("./sdxl-cache", safe_serialization=True, variant="fp16")
+            self.pipe.save_pretrained("./sdxl-cache", safe_serialization=True)
         else:
             self.pipe = DiffusionPipeline.from_pretrained(
                 SDXL_MODEL_CACHE,
@@ -84,7 +84,7 @@ class Predictor(BasePredictor):
                 variant="fp16"
             )
 
-        # self.pipe.load_lora_weights("./", weight_name="drip_glasses.safetensors", adapter_name="DRIP")
+        self.pipe.load_lora_weights("./", weight_name="pit_viper_sunglasses.safetensors", adapter_name="DRIP")
 
         self.is_trained_model = weights or os.path.exists(TRAINED_MODEL_LOCATION)
 
@@ -236,8 +236,7 @@ class Predictor(BasePredictor):
             self.pipe.load_textual_inversion(state_dict["text_encoders_1"], token=["<s0>", "<s1>"], text_encoder=self.pipe.text_encoder_2, tokenizer=self.pipe.tokenizer_2)
             self.pipe.load_lora_weights(local_weights_cache, weight_name="lora.safetensors", adapter_name="TOK")
 
-        # is_using_two_loras = self.is_trained_model or custom_weights
-        is_using_two_loras = False
+        is_using_two_loras = self.is_trained_model or custom_weights
 
         if is_using_two_loras:
             print("using two loras")
