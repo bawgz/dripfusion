@@ -3,10 +3,15 @@ import shutil
 import tarfile
 
 from cog import BaseModel, Input, Path
+import torch
 
 from predict import SDXL_MODEL_CACHE
 from preprocess import preprocess
 from trainer_pti import main
+from diffusers import (
+    DiffusionPipeline,
+    AutoencoderKL,
+)
 
 """
 Wrapper around actual trainer.
@@ -151,6 +156,21 @@ def train(
         substitution_tokens=list(token_dict.keys()),
     )
 
+    if not os.path.exists(SDXL_MODEL_CACHE):
+        better_vae = AutoencoderKL.from_pretrained(
+            "madebyollin/sdxl-vae-fp16-fix",
+            torch_dtype=torch.float16
+        )
+
+        pipe = DiffusionPipeline.from_pretrained(
+            "stabilityai/stable-diffusion-xl-base-1.0",
+            vae=better_vae,
+            torch_dtype=torch.float16,
+            use_safetensors=True,
+            variant="fp16",
+        )
+
+        pipe.save_pretrained(SDXL_MODEL_CACHE, safe_serialization=True)
     if os.path.exists(OUTPUT_DIR):
         shutil.rmtree(OUTPUT_DIR)
     os.makedirs(OUTPUT_DIR)

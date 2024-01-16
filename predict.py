@@ -64,46 +64,23 @@ class Predictor(BasePredictor):
 
         print("Loading sdxl txt2img pipeline...")
 
-        if not os.path.exists(SDXL_MODEL_CACHE):
-            better_vae = AutoencoderKL.from_pretrained(
-                "madebyollin/sdxl-vae-fp16-fix",
-                torch_dtype=torch.float16
-            )
-
-            self.pipe = DiffusionPipeline.from_pretrained(
-                "stabilityai/stable-diffusion-xl-base-1.0",
-                vae=better_vae,
-                torch_dtype=torch.float16,
-                use_safetensors=True,
-                variant="fp16",
-            )
-
-            self.pipe.save_pretrained(SDXL_MODEL_CACHE, safe_serialization=True)
-        else:
-            self.pipe = DiffusionPipeline.from_pretrained(
-                SDXL_MODEL_CACHE,
-                torch_dtype=torch.float16,
-                use_safetensors=True,
-                variant="fp16"
-            )
-
         if not os.path.exists(REAL_VIS_CACHE):
             better_vae = AutoencoderKL.from_pretrained(
                 "madebyollin/sdxl-vae-fp16-fix",
                 torch_dtype=torch.float16
             )
 
-            self.real_vis_pipe = DiffusionPipeline.from_pretrained(
+            self.pipe = DiffusionPipeline.from_pretrained(
                 "SG161222/RealVisXL_V3.0",
-                vae=self.pipe.vae,
+                vae=better_vae,
                 torch_dtype=torch.float16,
                 use_safetensors=True,
                 variant="fp16",
             )
 
-            self.real_vis_pipe.save_pretrained(REAL_VIS_CACHE, safe_serialization=True)
+            self.pipe.save_pretrained(REAL_VIS_CACHE, safe_serialization=True)
         else:
-            self.real_vis_pipe = DiffusionPipeline.from_pretrained(
+            self.pipe = DiffusionPipeline.from_pretrained(
                 REAL_VIS_CACHE,
                 torch_dtype=torch.float16,
                 use_safetensors=True,
@@ -111,7 +88,6 @@ class Predictor(BasePredictor):
             )
 
         self.pipe.load_lora_weights("./", weight_name="pit_viper_sunglasses.safetensors", adapter_name="DRIP")
-        self.real_vis_pipe.load_lora_weights("./", weight_name="pit_viper_sunglasses.safetensors", adapter_name="DRIP")
 
         self.is_trained_model = weights or os.path.exists(TRAINED_MODEL_LOCATION)
 
@@ -130,13 +106,7 @@ class Predictor(BasePredictor):
             self.pipe.load_textual_inversion(state_dict["text_encoders_1"], token=["<s0>", "<s1>"], text_encoder=self.pipe.text_encoder_2, tokenizer=self.pipe.tokenizer_2)
             self.pipe.load_lora_weights(TRAINED_MODEL_LOCATION, weight_name="lora.safetensors", adapter_name="TOK")
 
-
-            self.real_vis_pipe.load_textual_inversion(state_dict["text_encoders_0"], token=["<s0>", "<s1>"], text_encoder=self.real_vis_pipe.text_encoder, tokenizer=self.real_vis_pipe.tokenizer)
-            self.real_vis_pipe.load_textual_inversion(state_dict["text_encoders_1"], token=["<s0>", "<s1>"], text_encoder=self.real_vis_pipe.text_encoder_2, tokenizer=self.real_vis_pipe.tokenizer_2)
-            self.real_vis_pipe.load_lora_weights(TRAINED_MODEL_LOCATION, weight_name="lora.safetensors", adapter_name="TOK")
-
         self.pipe.to("cuda")
-        self.real_vis_pipe.to("cuda")
 
         print("Loading SDXL refiner pipeline...")
         # FIXME(ja): should the vae/text_encoder_2 be loaded from SDXL always?
@@ -246,10 +216,6 @@ class Predictor(BasePredictor):
             description="For base_image_refiner, the number of steps to refine, defaults to num_inference_steps",
             default=None,
         ),
-        use_real_vis: bool = Input(
-            description="Whether to use RealVisXL_V3.0 or standard SDXL",
-            default=False,
-        ),
     ) -> List[Path]:
         """Run a single prediction on the model."""
 
@@ -260,7 +226,7 @@ class Predictor(BasePredictor):
             seed = int.from_bytes(os.urandom(2), "big")
         print(f"Using seed: {seed}")
 
-        pipe = self.pipe if not use_real_vis else self.real_vis_pipe
+        pipe = self.pipe
 
         if custom_weights and not self.is_trained_model:
             print("downloading weights")
