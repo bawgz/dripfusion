@@ -64,23 +64,24 @@ class Predictor(BasePredictor):
 
         print("Loading sdxl txt2img pipeline...")
 
-        if not os.path.exists(SDXL_MODEL_CACHE):
-            # better_vae = AutoencoderKL.from_pretrained(
-            #     "madebyollin/sdxl-vae-fp16-fix",
-            #     torch_dtype=torch.float16
-            # )
+        if not os.path.exists(REAL_VIS_CACHE):
+            better_vae = AutoencoderKL.from_pretrained(
+                "madebyollin/sdxl-vae-fp16-fix",
+                torch_dtype=torch.float16
+            )
 
             self.pipe = DiffusionPipeline.from_pretrained(
                 "stabilityai/stable-diffusion-xl-base-1.0",
+                vae=better_vae,
                 torch_dtype=torch.float16,
                 use_safetensors=True,
                 variant="fp16",
             )
 
-            self.pipe.save_pretrained(SDXL_MODEL_CACHE, safe_serialization=True)
+            self.pipe.save_pretrained(REAL_VIS_CACHE, safe_serialization=True)
         else:
             self.pipe = DiffusionPipeline.from_pretrained(
-                SDXL_MODEL_CACHE,
+                REAL_VIS_CACHE,
                 torch_dtype=torch.float16,
                 use_safetensors=True,
                 variant="fp16"
