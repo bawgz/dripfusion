@@ -28,6 +28,8 @@ REFINER_MODEL_CACHE = "./refiner-cache"
 
 TRAINED_MODEL_LOCATION = "./trained-model"
 
+REAL_VIS_CACHE = "./real-vis-cache"
+
 # SDXL_URL = "https://weights.replicate.delivery/default/sdxl/sdxl-vae-upcast-fix.tar"
 
 class KarrasDPM:
@@ -75,10 +77,10 @@ class Predictor(BasePredictor):
                 variant="fp16",
             )
 
-            self.pipe.save_pretrained("./sdxl-cache", safe_serialization=True)
+            self.pipe.save_pretrained(REAL_VIS_CACHE, safe_serialization=True)
         else:
             self.pipe = DiffusionPipeline.from_pretrained(
-                SDXL_MODEL_CACHE,
+                REAL_VIS_CACHE,
                 torch_dtype=torch.float16,
                 use_safetensors=True,
                 variant="fp16"

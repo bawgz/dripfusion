@@ -17,7 +17,16 @@ def main(token):
         variant="fp16",
     )
 
-    pipe.save_pretrained("./sdxl-cache", variant="fp16")
+    pipe.save_pretrained("./sdxl-cache")
+
+    real_vis_pipe = DiffusionPipeline.from_pretrained(
+        "SG161222/RealVisXL_V3.0",
+        torch_dtype=torch.float16,
+        use_safetensors=True,
+        variant="fp16",
+    )
+
+    real_vis_pipe.save_pretrained("./real-vis-cache")
 
 if __name__ == "__main__":
     hf_token = sys.argv[1]
