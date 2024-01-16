@@ -71,16 +71,16 @@ class Predictor(BasePredictor):
             # )
 
             self.pipe = DiffusionPipeline.from_pretrained(
-                "SG161222/RealVisXL_V3.0",
+                "stabilityai/stable-diffusion-xl-base-1.0",
                 torch_dtype=torch.float16,
                 use_safetensors=True,
                 variant="fp16",
             )
 
-            self.pipe.save_pretrained(REAL_VIS_CACHE, safe_serialization=True)
+            self.pipe.save_pretrained(SDXL_MODEL_CACHE, safe_serialization=True)
         else:
             self.pipe = DiffusionPipeline.from_pretrained(
-                REAL_VIS_CACHE,
+                SDXL_MODEL_CACHE,
                 torch_dtype=torch.float16,
                 use_safetensors=True,
                 variant="fp16"
