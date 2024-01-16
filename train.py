@@ -4,7 +4,7 @@ import tarfile
 
 from cog import BaseModel, Input, Path
 
-from predict import SDXL_MODEL_CACHE, REAL_VIS_CACHE
+from predict import SDXL_MODEL_CACHE
 from preprocess import preprocess
 from trainer_pti import main
 
@@ -156,7 +156,7 @@ def train(
     os.makedirs(OUTPUT_DIR)
 
     main(
-        pretrained_model_name_or_path=REAL_VIS_CACHE,
+        pretrained_model_name_or_path=SDXL_MODEL_CACHE,
         instance_data_dir=os.path.join(input_dir, "captions.csv"),
         output_dir=OUTPUT_DIR,
         seed=seed,
