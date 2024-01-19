@@ -30,6 +30,8 @@ TRAINED_MODEL_LOCATION = "./trained-model"
 
 REAL_VIS_CACHE = "./real-vis-cache"
 
+DRIPFUSION_CACHE = "./dripfusion-cache"
+
 # SDXL_URL = "https://weights.replicate.delivery/default/sdxl/sdxl-vae-upcast-fix.tar"
 
 class KarrasDPM:
@@ -64,30 +66,37 @@ class Predictor(BasePredictor):
 
         print("Loading sdxl txt2img pipeline...")
 
-        if not os.path.exists(REAL_VIS_CACHE):
-            better_vae = AutoencoderKL.from_pretrained(
-                "madebyollin/sdxl-vae-fp16-fix",
-                torch_dtype=torch.float16
-            )
+        # if not os.path.exists(REAL_VIS_CACHE):
+        #     better_vae = AutoencoderKL.from_pretrained(
+        #         "madebyollin/sdxl-vae-fp16-fix",
+        #         torch_dtype=torch.float16
+        #     )
 
-            self.pipe = DiffusionPipeline.from_pretrained(
-                "SG161222/RealVisXL_V3.0",
-                vae=better_vae,
-                torch_dtype=torch.float16,
-                use_safetensors=True,
-                variant="fp16",
-            )
+        #     self.pipe = DiffusionPipeline.from_pretrained(
+        #         "SG161222/RealVisXL_V3.0",
+        #         vae=better_vae,
+        #         torch_dtype=torch.float16,
+        #         use_safetensors=True,
+        #         variant="fp16",
+        #     )
 
-            self.pipe.save_pretrained(REAL_VIS_CACHE, safe_serialization=True)
-        else:
-            self.pipe = DiffusionPipeline.from_pretrained(
-                REAL_VIS_CACHE,
-                torch_dtype=torch.float16,
-                use_safetensors=True,
-                variant="fp16"
-            )
+        #     self.pipe.save_pretrained(REAL_VIS_CACHE, safe_serialization=True)
+        # else:
+        #     self.pipe = DiffusionPipeline.from_pretrained(
+        #         REAL_VIS_CACHE,
+        #         torch_dtype=torch.float16,
+        #         use_safetensors=True,
+        #         variant="fp16"
+        #     )
 
-        self.pipe.load_lora_weights("./", weight_name="pit_viper_sunglasses.safetensors", adapter_name="DRIP")
+        self.pipe = DiffusionPipeline.from_pretrained(
+            DRIPFUSION_CACHE,
+            torch_dtype=torch.float16,
+            use_safetensors=True,
+            variant="fp16"
+        )
+
+        # self.pipe.load_lora_weights("./", weight_name="pit_viper_sunglasses.safetensors", adapter_name="DRIP")
 
         self.is_trained_model = weights or os.path.exists(TRAINED_MODEL_LOCATION)
 
@@ -241,11 +250,11 @@ class Predictor(BasePredictor):
             pipe.load_textual_inversion(state_dict["text_encoders_1"], token=["<s0>", "<s1>"], text_encoder=pipe.text_encoder_2, tokenizer=pipe.tokenizer_2)
             pipe.load_lora_weights(local_weights_cache, weight_name="lora.safetensors", adapter_name="TOK")
 
-        is_using_two_loras = self.is_trained_model or custom_weights
+        # is_using_two_loras = self.is_trained_model or custom_weights
 
-        if is_using_two_loras:
-            print("using two loras")
-            pipe.set_adapters(["TOK", "DRIP"], adapter_weights=[lora_scale_custom, lora_scale_base])
+        # if is_using_two_loras:
+        #     print("using two loras")
+        #     pipe.set_adapters(["TOK", "DRIP"], adapter_weights=[lora_scale_custom, lora_scale_base])
 
         sdxl_kwargs = {}
 
@@ -255,7 +264,8 @@ class Predictor(BasePredictor):
         elif refine == "base_image_refiner":
             sdxl_kwargs["output_type"] = "latent"
 
-        sdxl_kwargs["cross_attention_kwargs"] = {"scale": 1.0 if is_using_two_loras else lora_scale_base}
+        # sdxl_kwargs["cross_attention_kwargs"] = {"scale": 1.0 if is_using_two_loras else lora_scale_base}
+        sdxl_kwargs["cross_attention_kwargs"] = {"scale": lora_scale_custom}
 
         common_args = {
             "prompt": prompt,
