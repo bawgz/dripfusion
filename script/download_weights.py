@@ -24,6 +24,16 @@ def main(token):
 
     pipe.save_pretrained("./sdxl-cache")
 
+    pipe = DiffusionPipeline.from_pretrained(
+        "stabilityai/stable-diffusion-xl-refiner-1.0",
+        torch_dtype=torch.float16,
+        use_safetensors=True,
+        variant="fp16",
+    )
+
+    # TODO - we don't need to save all of this and in fact should save just the unet, tokenizer, and config.
+    pipe.save_pretrained("./refiner-cache", safe_serialization=True)
+
     dripfusion_pipe = DiffusionPipeline.from_pretrained(
         "bawgz/dripfusion-base",
         torch_dtype=torch.float16,

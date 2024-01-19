@@ -27,5 +27,4 @@ swin2sr-cache/
 weights-cache/
 tests/
 trained-model/
-refiner-cache/
 script/*.sh

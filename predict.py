@@ -123,26 +123,26 @@ class Predictor(BasePredictor):
 
         print("Loading refiner pipeline...")
 
-        if os.path.exists(REFINER_MODEL_CACHE):
-            self.refiner = DiffusionPipeline.from_pretrained(
-                REFINER_MODEL_CACHE,
-                text_encoder_2=self.pipe.text_encoder_2,
-                vae=self.pipe.vae,
-                torch_dtype=torch.float16,
-                use_safetensors=True,
-                variant="fp16",
-            )           
-        else:
-            self.refiner = DiffusionPipeline.from_pretrained(
-                "stabilityai/stable-diffusion-xl-refiner-1.0",
-                text_encoder_2=self.pipe.text_encoder_2,
-                vae=self.pipe.vae,
-                torch_dtype=torch.float16,
-                use_safetensors=True,
-                variant="fp16",
-            )
+        # if os.path.exists(REFINER_MODEL_CACHE):
+        self.refiner = DiffusionPipeline.from_pretrained(
+            REFINER_MODEL_CACHE,
+            text_encoder_2=self.pipe.text_encoder_2,
+            vae=self.pipe.vae,
+            torch_dtype=torch.float16,
+            use_safetensors=True,
+            variant="fp16",
+        )
+        # else:
+        #     self.refiner = DiffusionPipeline.from_pretrained(
+        #         "stabilityai/stable-diffusion-xl-refiner-1.0",
+        #         text_encoder_2=self.pipe.text_encoder_2,
+        #         vae=self.pipe.vae,
+        #         torch_dtype=torch.float16,
+        #         use_safetensors=True,
+        #         variant="fp16",
+        #     )
 
-            self.refiner.save_pretrained("./refiner-cache", safe_serialization=True)
+        #     self.refiner.save_pretrained("./refiner-cache", safe_serialization=True)
         
         self.refiner.to("cuda")
 
