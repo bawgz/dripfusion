@@ -271,6 +271,9 @@ class Predictor(BasePredictor):
             # load embeddings of text_encoder 2 (CLIP ViT-G/14)
             pipe.load_textual_inversion(state_dict["text_encoders_1"], token=["<s0>", "<s1>"], text_encoder=pipe.text_encoder_2, tokenizer=pipe.tokenizer_2)
             pipe.load_lora_weights(local_weights_cache, weight_name="lora.safetensors", adapter_name="TOK")
+            
+            # Need to set adapter for some reason even though it's the first lora added.
+            # Probably has something to do with the base model having the fused lora in it.
             pipe.set_adapters("TOK")
             self.refiner.vae = pipe.vae
             self.refiner.text_encoder_2 = pipe.text_encoder_2
