@@ -24,16 +24,6 @@ def main(token):
 
     pipe.save_pretrained("./sdxl-cache")
 
-    real_vis_pipe = DiffusionPipeline.from_pretrained(
-        "SG161222/RealVisXL_V3.0",
-        vae=better_vae,
-        torch_dtype=torch.float16,
-        use_safetensors=True,
-        variant="fp16",
-    )
-
-    real_vis_pipe.save_pretrained("./real-vis-cache")
-
     dripfusion_pipe = DiffusionPipeline.from_pretrained(
         "bawgz/dripfusion-base",
         torch_dtype=torch.float16,

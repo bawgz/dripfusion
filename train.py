@@ -5,7 +5,7 @@ import tarfile
 from cog import BaseModel, Input, Path
 import torch
 
-from predict import SDXL_MODEL_CACHE, DRIPFUSION_CACHE, REAL_VIS_CACHE
+from predict import SDXL_MODEL_CACHE
 from preprocess import preprocess
 from trainer_pti import main
 from diffusers import (

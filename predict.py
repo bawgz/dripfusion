@@ -28,8 +28,6 @@ REFINER_MODEL_CACHE = "./refiner-cache"
 
 TRAINED_MODEL_LOCATION = "./trained-model"
 
-REAL_VIS_CACHE = "./real-vis-cache"
-
 DRIPFUSION_CACHE = "./dripfusion-cache"
 
 # SDXL_URL = "https://weights.replicate.delivery/default/sdxl/sdxl-vae-upcast-fix.tar"
