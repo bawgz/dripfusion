@@ -247,6 +247,8 @@ class Predictor(BasePredictor):
             # load embeddings of text_encoder 2 (CLIP ViT-G/14)
             pipe.load_textual_inversion(state_dict["text_encoders_1"], token=["<s0>", "<s1>"], text_encoder=pipe.text_encoder_2, tokenizer=pipe.tokenizer_2)
             pipe.load_lora_weights(local_weights_cache, weight_name="lora.safetensors", adapter_name="TOK")
+            self.refiner.vae = pipe.vae
+            self.refiner.text_encoder_2 = pipe.text_encoder_2
 
         # is_using_two_loras = self.is_trained_model or custom_weights
 
