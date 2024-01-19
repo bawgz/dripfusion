@@ -115,6 +115,7 @@ class Predictor(BasePredictor):
             # load embeddings of text_encoder 2 (CLIP ViT-G/14)
             self.pipe.load_textual_inversion(state_dict["text_encoders_1"], token=["<s0>", "<s1>"], text_encoder=self.pipe.text_encoder_2, tokenizer=self.pipe.tokenizer_2)
             self.pipe.load_lora_weights(TRAINED_MODEL_LOCATION, weight_name="lora.safetensors", adapter_name="TOK")
+            self.pipe.set_adapters("TOK")
 
         self.pipe.to("cuda")
 
@@ -270,6 +271,7 @@ class Predictor(BasePredictor):
             # load embeddings of text_encoder 2 (CLIP ViT-G/14)
             pipe.load_textual_inversion(state_dict["text_encoders_1"], token=["<s0>", "<s1>"], text_encoder=pipe.text_encoder_2, tokenizer=pipe.tokenizer_2)
             pipe.load_lora_weights(local_weights_cache, weight_name="lora.safetensors", adapter_name="TOK")
+            pipe.set_adapters("TOK")
             self.refiner.vae = pipe.vae
             self.refiner.text_encoder_2 = pipe.text_encoder_2
 
