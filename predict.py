@@ -14,12 +14,13 @@ from diffusers import (
     EulerAncestralDiscreteScheduler,
     EulerDiscreteScheduler,
     HeunDiscreteScheduler,
-    PNDMScheduler,
-    CLIPImageProcessor
+    PNDMScheduler
 )
 from diffusers.pipelines.stable_diffusion.safety_checker import (
     StableDiffusionSafetyChecker,
 )
+from transformers import CLIPImageProcessor
+
 from dataset_and_utils import TokenEmbeddingsHandler
 from weights import WeightsDownloadCache
 import numpy as np
