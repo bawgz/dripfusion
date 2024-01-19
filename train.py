@@ -5,7 +5,7 @@ import tarfile
 from cog import BaseModel, Input, Path
 import torch
 
-from predict import SDXL_MODEL_CACHE
+from predict import SDXL_MODEL_CACHE, DRIPFUSION_CACHE
 from preprocess import preprocess
 from trainer_pti import main
 from diffusers import (
@@ -176,7 +176,7 @@ def train(
     os.makedirs(OUTPUT_DIR)
 
     main(
-        pretrained_model_name_or_path=SDXL_MODEL_CACHE,
+        pretrained_model_name_or_path=DRIPFUSION_CACHE,
         instance_data_dir=os.path.join(input_dir, "captions.csv"),
         output_dir=OUTPUT_DIR,
         seed=seed,
