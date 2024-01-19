@@ -2,7 +2,6 @@ from typing import List, Optional
 import os
 import time
 import subprocess
-
 import torch.nn as nn
 import torch
 from safetensors.torch import load_file
@@ -15,20 +14,23 @@ from diffusers import (
     EulerAncestralDiscreteScheduler,
     EulerDiscreteScheduler,
     HeunDiscreteScheduler,
-    AutoencoderKL,
-    PNDMScheduler
+    PNDMScheduler,
+    CLIPImageProcessor
 )
-
+from diffusers.pipelines.stable_diffusion.safety_checker import (
+    StableDiffusionSafetyChecker,
+)
 from dataset_and_utils import TokenEmbeddingsHandler
 from weights import WeightsDownloadCache
+import numpy as np
 
 SDXL_MODEL_CACHE = "./sdxl-cache"
-
 REFINER_MODEL_CACHE = "./refiner-cache"
-
 TRAINED_MODEL_LOCATION = "./trained-model"
-
 DRIPFUSION_CACHE = "./dripfusion-cache"
+SAFETY_CACHE = "./safety-cache"
+FEATURE_EXTRACTOR = "./feature-extractor"
+
 
 # SDXL_URL = "https://weights.replicate.delivery/default/sdxl/sdxl-vae-upcast-fix.tar"
 
@@ -146,6 +148,11 @@ class Predictor(BasePredictor):
         
         self.refiner.to("cuda")
 
+        self.safety_checker = StableDiffusionSafetyChecker.from_pretrained(
+            SAFETY_CACHE, torch_dtype=torch.float16
+        ).to("cuda")
+
+        self.feature_extractor = CLIPImageProcessor.from_pretrained(FEATURE_EXTRACTOR)
 
         # FIXME: should I load lora weights to the refiner? Below does not work
         # print("setting refiner adapters")
@@ -166,6 +173,17 @@ class Predictor(BasePredictor):
         text_embeddings_filtered = nn.Embedding(tokenizer_size, text_embedding_dim)
         text_embeddings_filtered.weight.data = text_embedding_weights
         text_encoder.set_input_embeddings(text_embeddings_filtered)
+
+    def run_safety_checker(self, image):
+        safety_checker_input = self.feature_extractor(image, return_tensors="pt").to(
+            "cuda"
+        )
+        np_image = [np.array(val) for val in image]
+        image, has_nsfw_concept = self.safety_checker(
+            images=np_image,
+            clip_input=safety_checker_input.pixel_values.to(torch.float16),
+        )
+        return image, has_nsfw_concept
 
     @torch.inference_mode()
     def predict(
@@ -223,6 +241,10 @@ class Predictor(BasePredictor):
             description="For base_image_refiner, the number of steps to refine, defaults to num_inference_steps",
             default=None,
         ),
+        disable_safety_checker: bool = Input(
+            description="Disable safety checker for generated images. This feature is only available through the API. See [https://replicate.com/docs/how-does-replicate-work#safety](https://replicate.com/docs/how-does-replicate-work#safety)",
+            default=False
+        )
     ) -> List[Path]:
         """Run a single prediction on the model."""
 
@@ -294,8 +316,17 @@ class Predictor(BasePredictor):
 
             output = self.refiner(**common_args, **refiner_kwargs)
 
+        if not disable_safety_checker:
+            _, has_nsfw_content = self.run_safety_checker(output.images)
+
+        
+
         output_paths = []
         for i, image in enumerate(output.images):
+            if not disable_safety_checker:
+                if has_nsfw_content[i]:
+                    print(f"NSFW content detected in image {i}")
+                    continue
             output_path = f"/tmp/out-{i}.png"
             image.save(output_path)
             output_paths.append(Path(output_path))
