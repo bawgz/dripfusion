@@ -27,3 +27,6 @@ weights-cache/
 tests/
 trained-model/
 script/*.sh
+refiner-cache/
+safety-cache/
+sdxl-cache/

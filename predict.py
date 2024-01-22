@@ -125,9 +125,17 @@ class Predictor(BasePredictor):
         # FIXME(ja): if the answer to above is use VAE/Text_Encoder_2 from fine-tune
         #            what does this imply about lora + refiner? does the refiner need to know about
 
-        print("Loading refiner pipeline...")
+        if not os.path.exists(REFINER_MODEL_CACHE):
+            refiner = DiffusionPipeline.from_pretrained(
+                "stabilityai/stable-diffusion-xl-refiner-1.0",
+                torch_dtype=torch.float16,
+                use_safetensors=True,
+                variant="fp16",
+            )
 
-        # if os.path.exists(REFINER_MODEL_CACHE):
+            # TODO - we don't need to save all of this and in fact should save just the unet, tokenizer, and config.
+            refiner.save_pretrained(REFINER_MODEL_CACHE, safe_serialization=True)
+
         self.refiner = DiffusionPipeline.from_pretrained(
             REFINER_MODEL_CACHE,
             text_encoder_2=self.pipe.text_encoder_2,
@@ -135,20 +143,15 @@ class Predictor(BasePredictor):
             torch_dtype=torch.float16,
             use_safetensors=True,
             variant="fp16",
-        )
-        # else:
-        #     self.refiner = DiffusionPipeline.from_pretrained(
-        #         "stabilityai/stable-diffusion-xl-refiner-1.0",
-        #         text_encoder_2=self.pipe.text_encoder_2,
-        #         vae=self.pipe.vae,
-        #         torch_dtype=torch.float16,
-        #         use_safetensors=True,
-        #         variant="fp16",
-        #     )
+        ).to("cuda")
 
-        #     self.refiner.save_pretrained("./refiner-cache", safe_serialization=True)
-        
-        self.refiner.to("cuda")
+        if not os.path.exists(SAFETY_CACHE):
+            safety = StableDiffusionSafetyChecker.from_pretrained(
+                "CompVis/stable-diffusion-safety-checker",
+                torch_dtype=torch.float16,
+            )
+
+            safety.save_pretrained("./safety-cache")
 
         self.safety_checker = StableDiffusionSafetyChecker.from_pretrained(
             SAFETY_CACHE, torch_dtype=torch.float16
@@ -156,9 +159,6 @@ class Predictor(BasePredictor):
 
         self.feature_extractor = CLIPImageProcessor.from_pretrained(FEATURE_EXTRACTOR)
 
-        # FIXME: should I load lora weights to the refiner? Below does not work
-        # print("setting refiner adapters")
-        # self.refiner.load_lora_weights("./trained-model-luk/", weight_name="lora.safetensors", adapter_name="LUK")
 
     def reset_tokenizer_and_encoder(self, tokenizer, text_encoder, tokens_to_remove):
         for token_to_remove in tokens_to_remove:
@@ -177,9 +177,7 @@ class Predictor(BasePredictor):
         text_encoder.set_input_embeddings(text_embeddings_filtered)
 
     def run_safety_checker(self, image):
-        safety_checker_input = self.feature_extractor(image, return_tensors="pt").to(
-            "cuda"
-        )
+        safety_checker_input = self.feature_extractor(image, return_tensors="pt").to("cuda")
         np_image = [np.array(val) for val in image]
         image, has_nsfw_concept = self.safety_checker(
             images=np_image,

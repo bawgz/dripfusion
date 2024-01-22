@@ -4,40 +4,9 @@
 
 import torch
 import sys
-from diffusers import DiffusionPipeline, AutoencoderKL
-from diffusers.pipelines.stable_diffusion.safety_checker import (
-    StableDiffusionSafetyChecker,
-)
-
-# from huggingface_hub import hf_hub_download
+from diffusers import DiffusionPipeline
 
 def main(token):
-    # hf_hub_download(repo_id="bawgz/dripglasses_lora", filename="pit_viper_sunglasses.safetensors", repo_type="model", local_dir="./", local_dir_use_symlinks=False, use_auth_token=token)
-
-    better_vae = AutoencoderKL.from_pretrained(
-        "madebyollin/sdxl-vae-fp16-fix", torch_dtype=torch.float16
-    )
-
-    pipe = DiffusionPipeline.from_pretrained(
-        "stabilityai/stable-diffusion-xl-base-1.0",
-        vae=better_vae,
-        torch_dtype=torch.float16,
-        use_safetensors=True,
-        variant="fp16",
-    )
-
-    pipe.save_pretrained("./sdxl-cache")
-
-    pipe = DiffusionPipeline.from_pretrained(
-        "stabilityai/stable-diffusion-xl-refiner-1.0",
-        torch_dtype=torch.float16,
-        use_safetensors=True,
-        variant="fp16",
-    )
-
-    # TODO - we don't need to save all of this and in fact should save just the unet, tokenizer, and config.
-    pipe.save_pretrained("./refiner-cache", safe_serialization=True)
-
     dripfusion_pipe = DiffusionPipeline.from_pretrained(
         "bawgz/dripfusion-base",
         torch_dtype=torch.float16,
@@ -46,13 +15,6 @@ def main(token):
     )
 
     dripfusion_pipe.save_pretrained("./dripfusion-cache")
-
-    safety = StableDiffusionSafetyChecker.from_pretrained(
-        "CompVis/stable-diffusion-safety-checker",
-        torch_dtype=torch.float16,
-    )
-
-    safety.save_pretrained("./safety-cache")
 
 if __name__ == "__main__":
     hf_token = sys.argv[1]
